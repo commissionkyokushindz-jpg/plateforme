@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>المنصة الرقمية للجنة الوطنية للكيوكوشين كاي</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="flash" class="flash"></div>
+
+<!-- ==================== PAGE DE CONNEXION ==================== -->
+<div id="page-login" class="view active">
+  <div class="login-bg">
+    <div class="login-container">
+
+     <div class="login-header">
+  <div class="login-logos">
+    <!-- logo.png à GAUCHE -->
+    <img src="assets/logo.png" alt="Commission Nationale de Kyokushin Kai">
+    
+    <!-- Séparateur gauche -->
+    <div class="login-divider-mark login-divider-left"></div>
+    
+    <!-- TEXTE AU MILIEU ENTRE LES LOGOS -->
+    <div class="login-text-between">
+      <div class="republic-text">الجمهورية الجزائرية الديمقراطية الشعبية</div>
+      <div class="ministry-text">وزارة الرياضة</div>
+      <div class="fed-text">الاتحادية الجزائرية للكراتي دو</div>
+    </div>
+    
+    <!-- Séparateur droit -->
+    <div class="login-divider-mark login-divider-right"></div>
+    
+    <!-- karate.png à DROITE -->
+    <img src="assets/karate.png" alt="Fédération Algérienne de Karaté-Do">
+  </div>
+  
+  <!-- TEXTE COMPLET EN DESSOUS -->
+  <div class="login-text-full">
+    <div class="commission-text-ar">اللجنة الوطنية للكيوكوشين كاي</div>
+    <div class="commission-text-fr">Commission Nationale de Kyokushin Kai</div>
+    <div class="site-name-dynamic">المنصة الرقمية &middot; Plateforme numérique</div>
+  </div>
+</div>
+      <div class="login-card">
+        <h2 id="login-title">Connexion</h2>
+        <div class="input-group">
+          <label id="email-label">Email</label>
+          <input type="text" id="login-email" placeholder="admin@kyokushin.dz">
+        </div>
+        <div class="input-group">
+          <label id="password-label">Mot de passe</label>
+          <input type="password" id="login-pw" placeholder="••••••••" onkeypress="if(event.key==='Enter')login()">
+        </div>
+        <div id="login-error" class="error-msg" style="display:none"></div>
+        <button class="btn-login" onclick="login()" id="login-btn">Se connecter</button>
+        <div class="language-switch login-lang">
+          <button class="lang-link active" onclick="setLanguage('fr')">Français</button>
+          <span>|</span>
+          <button class="lang-link" onclick="setLanguage('ar')">العربية</button>
+        </div>
+      </div>
+
+      <div class="login-footer">
+        <div class="footer-dev">© 2026 — Développé par Benaissa.Z</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== APPLICATION PRINCIPALE ==================== -->
+<div id="app-shell" style="display:none">
+  <div class="app-wrapper">
+
+    <header class="main-header">
+      <div class="header-top">
+        <div class="header-logo">
+          <div class="header-logo-imgs">
+            <!-- UNIQUEMENT le logo de la Commission -->
+            <img src="assets/logo.png" alt="Logo Commission Kyokushin Kai">
+            <!-- Logo karate.png SUPPRIMÉ -->
+          </div>
+          <div class="header-titles">
+            <div class="header-republic" id="header-republic">الجمهورية الجزائرية الديمقراطية الشعبية</div>
+            <div class="header-ministry" id="header-ministry">وزارة الرياضة</div>
+            <div class="header-commission-ar" id="header-commission-ar">اللجنة الوطنية للكيوكوشين كاي</div>
+            <div class="header-commission-fr" id="header-commission-fr">Commission Nationale de Kyokushin Kai</div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div class="user-info">
+            <span id="user-name" class="user-name"></span>
+            <span id="user-role" class="user-role"></span>
+          </div>
+          <button class="icon-btn" onclick="toggleLanguage()" id="lang-switch"><i class="ti ti-language"></i> FR</button>
+          <button class="icon-btn logout-btn" onclick="logout()" id="logout-header"><i class="ti ti-logout"></i> Déconnexion</button>
+        </div>
+      </div>
+      <div class="header-tristripe"></div>
+      <div class="header-bottom">
+        <div class="welcome-ar" id="welcome-ar"></div>
+        <div class="welcome-fr" id="welcome-fr"></div>
+      </div>
+    </header>
+
+    <!-- Le reste du code reste identique -->
+    <div class="app-layout">
+      <aside class="sidebar" id="sidebar"></aside>
+      <main class="main-content" id="main-content"></main>
+    </div>
+
+    <footer class="main-footer">
+      <div class="footer-content">
+        <span class="footer-dev">© 2026 — Développé par Benaissa.Z | Commission Nationale de Kyokushin Kai Algérie</span>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- Modal Catégorie -->
+<div id="modal-category" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><h3 id="modal-cat-title">Nouvelle catégorie</h3><button class="modal-close" onclick="closeModal('modal-category')">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="mcat-id">
+      <div class="form-grid">
+        <div><label>Nom (FR)</label><input id="mcat-nameFr" type="text"></div>
+        <div><label>Poids (FR)</label><input id="mcat-poidsFr" type="text"></div>
+        <div><label>Nom (AR)</label><input id="mcat-nameAr" type="text" dir="rtl"></div>
+        <div><label>Poids (AR)</label><input id="mcat-poidsAr" type="text" dir="rtl"></div>
+        <div><label>Genre</label><select id="mcat-gender"><option>Hommes</option><option>Femmes</option></select></div>
+        <div><label>Genre AR</label><select id="mcat-genderAr"><option>ذكور</option><option>إناث</option></select></div>
+        <div><label>Année min</label><input id="mcat-anneeMin" type="number"></div>
+        <div><label>Année max</label><input id="mcat-anneeMax" type="number"></div>
+        <div><label>Poids min (kg)</label><input id="mcat-poidsMin" type="number" step="0.1" value="0"></div>
+        <div><label>Poids max (kg)</label><input id="mcat-poidsMax" type="number" step="0.1"></div>
+      </div>
+      <div class="modal-buttons"><button class="btn-primary" onclick="saveCategory()">Enregistrer</button><button class="btn-outline" onclick="closeModal('modal-category')">Annuler</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Club -->
+<div id="modal-club" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><h3 id="modal-club-title">Nouveau club</h3><button class="modal-close" onclick="closeModal('modal-club')">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="mclub-id">
+      <div class="form-grid">
+        <div><label>Email *</label><input id="mclub-email" type="email"></div>
+        <div><label>Mot de passe *</label><input id="mclub-password" type="text"></div>
+        <div><label>Nom du club *</label><input id="mclub-name" type="text"></div>
+        <div><label>ID Club</label><input id="mclub-code" type="text" placeholder="A, B, C..."></div>
+        <div><label>Wilaya</label><select id="mclub-wilaya"></select></div>
+        <div><label>Responsable</label><input id="mclub-responsable" type="text"></div>
+        <div><label>Téléphone</label><input id="mclub-phone" type="tel"></div>
+      </div>
+      <div class="modal-buttons"><button class="btn-primary" onclick="saveClub()">Enregistrer</button><button class="btn-outline" onclick="closeModal('modal-club')">Annuler</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Événement (ex-compétition) -->
+<div id="modal-comp" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><h3 id="modal-comp-title">Événement</h3><button class="modal-close" onclick="closeModal('modal-comp')">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="mcomp-id">
+
+      <label style="display:block;margin-bottom:8px;">Type d'événement</label>
+      <div class="evt-type-grid" id="evt-type-grid">
+        <div class="evt-type-option" data-type="competition" onclick="selectEventType('competition')">
+          <i class="ti ti-trophy"></i><span>Compétition</span>
+        </div>
+        <div class="evt-type-option" data-type="stage" onclick="selectEventType('stage')">
+          <i class="ti ti-tent"></i><span>Stage</span>
+        </div>
+        <div class="evt-type-option" data-type="grade" onclick="selectEventType('grade')">
+          <i class="ti ti-certificate"></i><span>Passage de grade</span>
+        </div>
+        <div class="evt-type-option" data-type="festival" onclick="selectEventType('festival')">
+          <i class="ti ti-confetti"></i><span>Festival</span>
+        </div>
+      </div>
+      <input type="hidden" id="mcomp-type" value="competition">
+
+      <div class="form-grid">
+        <div><label>Nom (AR)</label><input id="mcomp-name" type="text" dir="rtl"></div>
+        <div><label>Nom (FR)</label><input id="mcomp-nameEn" type="text"></div>
+        <div><label>Wilaya</label><select id="mcomp-wilaya"></select></div>
+        <div><label>Date début</label><input id="mcomp-dateStart" type="date"></div>
+        <div><label>Date fin</label><input id="mcomp-dateEnd" type="date"></div>
+        <div><label>Date limite</label><input id="mcomp-deadline" type="date"></div>
+      </div>
+
+<!-- Dans modal-comp -->
+<!-- Dans modal-comp, remplacer le select par : -->
+<div>
+  <label>Catégories (sélection multiple - Ctrl+Click)</label>
+  <div class="select-actions">
+    <button type="button" onclick="selectAllCategories()">✓ Tout sélectionner</button>
+    <button type="button" onclick="deselectAllCategories()">✕ Tout désélectionner</button>
+  </div>
+  <select id="mcomp-cats" multiple size="6" class="multi-select"></select>
+</div>
+      <label style="display:block;margin:16px 0 8px;">Champs requis pour l'inscription</label>
+      <div class="field-checks" id="field-checks-grid">
+        <label class="field-check-item"><input type="checkbox" value="name" checked disabled> Nom &amp; prénom</label>
+        <label class="field-check-item"><input type="checkbox" value="dob" checked> Date de naissance</label>
+        <label class="field-check-item"><input type="checkbox" value="gender" checked> Sexe</label>
+        <label class="field-check-item"><input type="checkbox" value="weight"> Poids</label>
+        <label class="field-check-item"><input type="checkbox" value="grade"> Grade / ceinture</label>
+        <label class="field-check-item"><input type="checkbox" value="category"> Catégorie</label>
+      </div>
+
+      <label style="display:block;margin-bottom:8px;">Champs personnalisés additionnels</label>
+      <div class="custom-fields-list" id="custom-fields-list"></div>
+      <button class="btn-outline btn-sm" onclick="addCustomFieldRow()" type="button"><i class="ti ti-plus"></i> Ajouter un champ</button>
+
+      <div class="modal-buttons"><button class="btn-primary" onclick="saveCompetition()">Enregistrer</button><button class="btn-outline" onclick="closeModal('modal-comp')">Annuler</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Inscription -->
+<div id="modal-register" class="modal modal-large">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div>
+        <div id="mreg-comp-ar" class="modal-title-ar"></div>
+        <div id="mreg-comp-en" class="modal-title-fr"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-register')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box"><a href="#" id="download-template-link"><i class="ti ti-file-spreadsheet"></i> Télécharger le modèle Excel</a></div>
+      <div class="file-drop" id="excel-upload-area"><div><i class="ti ti-upload" style="font-size:20px;display:block;margin-bottom:6px;"></i>Cliquez ou glissez-déposez un fichier Excel (.xlsx)</div><input type="file" id="excel-upload-input" accept=".xlsx,.xls" style="display:none"></div>
+      <div class="section-title" id="manual-title" style="font-size:15px;">Ajouter manuellement</div>
+      <div class="form-grid" id="mreg-dynamic-fields">
+        <div><label>Nom complet *</label><input id="mreg-pname" type="text"></div>
+        <div><label>Date naissance</label><input id="mreg-pdob" type="date"></div>
+        <div><label>Poids (kg)</label><input id="mreg-pweight" type="number" step="0.1"></div>
+        <div><label>Sexe</label><select id="mreg-pgender"><option>ذكور</option><option>إناث</option></select></div>
+        <div><label>Catégorie</label><select id="mreg-pcat"></select></div>
+      </div>
+      <button class="btn-primary btn-sm" onclick="addManualParticipant()" id="add-btn"><i class="ti ti-plus"></i> Ajouter</button>
+      <div id="mreg-list-wrap"></div>
+      <div class="modal-buttons"><button class="btn-primary" onclick="submitRegistration()" id="confirm-btn">Confirmer l'inscription</button><button class="btn-outline" onclick="closeModal('modal-register')">Annuler</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
