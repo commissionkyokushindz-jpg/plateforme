@@ -4,10 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>المنصة الرقمية للجنة الوطنية للكيوكوشين كاي</title>
+
+<!-- ===== FAVICON ===== -->
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="shortcut icon" type="image/png" href="assets/logo.png">
+<link rel="apple-touch-icon" href="assets/logo.png">
+
+<!-- ===== LIBRAIRIES ===== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<!-- ===== FONTS ===== -->
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- ===== ICONS ===== -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+
+<!-- ===== LIBRARIES ===== -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+<!-- ===== STYLES ===== -->
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -19,35 +38,25 @@
   <div class="login-bg">
     <div class="login-container">
 
-     <div class="login-header">
-  <div class="login-logos">
-    <!-- logo.png à GAUCHE -->
-    <img src="assets/logo.png" alt="Commission Nationale de Kyokushin Kai">
-    
-    <!-- Séparateur gauche -->
-    <div class="login-divider-mark login-divider-left"></div>
-    
-    <!-- TEXTE AU MILIEU ENTRE LES LOGOS -->
-    <div class="login-text-between">
-      <div class="republic-text">الجمهورية الجزائرية الديمقراطية الشعبية</div>
-      <div class="ministry-text">وزارة الرياضة</div>
-      <div class="fed-text">الاتحادية الجزائرية للكراتي دو</div>
-    </div>
-    
-    <!-- Séparateur droit -->
-    <div class="login-divider-mark login-divider-right"></div>
-    
-    <!-- karate.png à DROITE -->
-    <img src="assets/karate.png" alt="Fédération Algérienne de Karaté-Do">
-  </div>
-  
-  <!-- TEXTE COMPLET EN DESSOUS -->
-  <div class="login-text-full">
-    <div class="commission-text-ar">اللجنة الوطنية للكيوكوشين كاي</div>
-    <div class="commission-text-fr">Commission Nationale de Kyokushin Kai</div>
-    <div class="site-name-dynamic">المنصة الرقمية &middot; Plateforme numérique</div>
-  </div>
-</div>
+      <div class="login-header">
+        <div class="login-logos">
+          <img src="assets/logo.png" alt="Commission Nationale de Kyokushin Kai">
+          <div class="login-divider-mark login-divider-left"></div>
+          <div class="login-text-between">
+            <div class="republic-text">الجمهورية الجزائرية الديمقراطية الشعبية</div>
+            <div class="ministry-text">وزارة الرياضة</div>
+            <div class="fed-text">الاتحادية الجزائرية للكراتي دو</div>
+          </div>
+          <div class="login-divider-mark login-divider-right"></div>
+          <img src="assets/karate.png" alt="Fédération Algérienne de Karaté-Do">
+        </div>
+        <div class="login-text-full">
+          <div class="commission-text-ar">اللجنة الوطنية للكيوكوشين كاي</div>
+          <div class="commission-text-fr">Commission Nationale de Kyokushin Kai</div>
+          <div class="site-name-dynamic">المنصة الرقمية &middot; Plateforme numérique</div>
+        </div>
+      </div>
+
       <div class="login-card">
         <h2 id="login-title">Connexion</h2>
         <div class="input-group">
@@ -82,9 +91,7 @@
       <div class="header-top">
         <div class="header-logo">
           <div class="header-logo-imgs">
-            <!-- UNIQUEMENT le logo de la Commission -->
             <img src="assets/logo.png" alt="Logo Commission Kyokushin Kai">
-            <!-- Logo karate.png SUPPRIMÉ -->
           </div>
           <div class="header-titles">
             <div class="header-republic" id="header-republic">الجمهورية الجزائرية الديمقراطية الشعبية</div>
@@ -109,7 +116,6 @@
       </div>
     </header>
 
-    <!-- Le reste du code reste identique -->
     <div class="app-layout">
       <aside class="sidebar" id="sidebar"></aside>
       <main class="main-content" id="main-content"></main>
@@ -131,6 +137,7 @@
     <div class="modal-header"><h3 id="modal-cat-title">Nouvelle catégorie</h3><button class="modal-close" onclick="closeModal('modal-category')">&times;</button></div>
     <div class="modal-body">
       <input type="hidden" id="mcat-id">
+      <input type="hidden" id="mcat-parent-id">
       <div class="form-grid">
         <div><label>Nom (FR)</label><input id="mcat-nameFr" type="text"></div>
         <div><label>Poids (FR)</label><input id="mcat-poidsFr" type="text"></div>
@@ -142,6 +149,12 @@
         <div><label>Année max</label><input id="mcat-anneeMax" type="number"></div>
         <div><label>Poids min (kg)</label><input id="mcat-poidsMin" type="number" step="0.1" value="0"></div>
         <div><label>Poids max (kg)</label><input id="mcat-poidsMax" type="number" step="0.1"></div>
+        <div style="grid-column: span 2;">
+          <label>Catégorie parent (pour les sous-catégories)</label>
+          <select id="mcat-parent-select">
+            <option value="">Aucune (catégorie principale)</option>
+          </select>
+        </div>
       </div>
       <div class="modal-buttons"><button class="btn-primary" onclick="saveCategory()">Enregistrer</button><button class="btn-outline" onclick="closeModal('modal-category')">Annuler</button></div>
     </div>
@@ -168,13 +181,12 @@
   </div>
 </div>
 
-<!-- Modal Événement (ex-compétition) -->
+<!-- Modal Événement -->
 <div id="modal-comp" class="modal">
   <div class="modal-content">
     <div class="modal-header"><h3 id="modal-comp-title">Événement</h3><button class="modal-close" onclick="closeModal('modal-comp')">&times;</button></div>
     <div class="modal-body">
       <input type="hidden" id="mcomp-id">
-
       <label style="display:block;margin-bottom:8px;">Type d'événement</label>
       <div class="evt-type-grid" id="evt-type-grid">
         <div class="evt-type-option" data-type="competition" onclick="selectEventType('competition')">
@@ -191,7 +203,6 @@
         </div>
       </div>
       <input type="hidden" id="mcomp-type" value="competition">
-
       <div class="form-grid">
         <div><label>Nom (AR)</label><input id="mcomp-name" type="text" dir="rtl"></div>
         <div><label>Nom (FR)</label><input id="mcomp-nameEn" type="text"></div>
@@ -200,17 +211,14 @@
         <div><label>Date fin</label><input id="mcomp-dateEnd" type="date"></div>
         <div><label>Date limite</label><input id="mcomp-deadline" type="date"></div>
       </div>
-
-<!-- Dans modal-comp -->
-<!-- Dans modal-comp, remplacer le select par : -->
-<div>
-  <label>Catégories (sélection multiple - Ctrl+Click)</label>
-  <div class="select-actions">
-    <button type="button" onclick="selectAllCategories()">✓ Tout sélectionner</button>
-    <button type="button" onclick="deselectAllCategories()">✕ Tout désélectionner</button>
-  </div>
-  <select id="mcomp-cats" multiple size="6" class="multi-select"></select>
-</div>
+      <div>
+        <label>Catégories (sélection multiple - Ctrl+Click)</label>
+        <div class="select-actions">
+          <button type="button" onclick="selectAllCategories()">✓ Tout sélectionner</button>
+          <button type="button" onclick="deselectAllCategories()">✕ Tout désélectionner</button>
+        </div>
+        <select id="mcomp-cats" multiple size="6" class="multi-select"></select>
+      </div>
       <label style="display:block;margin:16px 0 8px;">Champs requis pour l'inscription</label>
       <div class="field-checks" id="field-checks-grid">
         <label class="field-check-item"><input type="checkbox" value="name" checked disabled> Nom &amp; prénom</label>
@@ -220,11 +228,9 @@
         <label class="field-check-item"><input type="checkbox" value="grade"> Grade / ceinture</label>
         <label class="field-check-item"><input type="checkbox" value="category"> Catégorie</label>
       </div>
-
       <label style="display:block;margin-bottom:8px;">Champs personnalisés additionnels</label>
       <div class="custom-fields-list" id="custom-fields-list"></div>
       <button class="btn-outline btn-sm" onclick="addCustomFieldRow()" type="button"><i class="ti ti-plus"></i> Ajouter un champ</button>
-
       <div class="modal-buttons"><button class="btn-primary" onclick="saveCompetition()">Enregistrer</button><button class="btn-outline" onclick="closeModal('modal-comp')">Annuler</button></div>
     </div>
   </div>
@@ -255,6 +261,285 @@
       <div id="mreg-list-wrap"></div>
       <div class="modal-buttons"><button class="btn-primary" onclick="submitRegistration()" id="confirm-btn">Confirmer l'inscription</button><button class="btn-outline" onclick="closeModal('modal-register')">Annuler</button></div>
     </div>
+  </div>
+</div>
+
+<!-- ===== MODAL ÉDITION PARTICIPANT (VÉRIFICATION) ===== -->
+<div id="modal-edit-participant" class="modal">
+  <div class="modal-content" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 id="edit-participant-title">Modifier le participant</h3>
+      <button class="modal-close" onclick="closeModal('modal-edit-participant')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-registration-id">
+      <input type="hidden" id="edit-participant-index">
+      
+      <div class="form-grid">
+        <div style="grid-column: span 2;">
+          <label id="edit-name-label">Nom complet *</label>
+          <input id="edit-participant-name" type="text">
+        </div>
+        <div>
+          <label id="edit-weight-label">Poids (kg) *</label>
+          <input id="edit-participant-weight" type="number" step="0.1">
+        </div>
+        <div>
+          <label id="edit-gender-label">Sexe</label>
+          <select id="edit-participant-gender">
+            <option value="ذكور">Homme</option>
+            <option value="إناث">Femme</option>
+          </select>
+        </div>
+        <div style="grid-column: span 2;">
+          <label id="edit-dob-label">Date de naissance</label>
+          <input id="edit-participant-dob" type="date">
+        </div>
+      </div>
+      
+      <div class="modal-buttons">
+        <button class="btn-primary" onclick="saveEditedParticipant()">
+          <i class="ti ti-device-floppy"></i> <span id="edit-save-btn">Enregistrer</span>
+        </button>
+        <button class="btn-outline" onclick="closeModal('modal-edit-participant')">
+          <span id="edit-cancel-btn">Annuler</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL ÉDITION PARTICIPANT (VÉRIFICATION) ===== -->
+<div id="modal-edit-participant" class="modal">
+  <div class="modal-content" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 id="edit-participant-title">Modifier le participant</h3>
+      <button class="modal-close" onclick="closeModal('modal-edit-participant')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-registration-id">
+      <input type="hidden" id="edit-participant-index">
+      
+      <div class="form-grid">
+        <div style="grid-column: span 2;">
+          <label id="edit-name-label">Nom complet *</label>
+          <input id="edit-participant-name" type="text">
+        </div>
+        <div>
+          <label id="edit-weight-label">Poids (kg) *</label>
+          <input id="edit-participant-weight" type="number" step="0.1">
+        </div>
+        <div>
+          <label id="edit-gender-label">Sexe</label>
+          <select id="edit-participant-gender">
+            <option value="ذكور">Homme</option>
+            <option value="إناث">Femme</option>
+          </select>
+        </div>
+        <div style="grid-column: span 2;">
+          <label id="edit-dob-label">Date de naissance</label>
+          <input id="edit-participant-dob" type="date">
+        </div>
+      </div>
+      
+      <div class="modal-buttons">
+        <button class="btn-primary" onclick="saveEditedParticipant()">
+          <i class="ti ti-device-floppy"></i> <span id="edit-save-btn">Enregistrer</span>
+        </button>
+        <button class="btn-outline" onclick="closeModal('modal-edit-participant')">
+          <span id="edit-cancel-btn">Annuler</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SECTIONS (CACHÉES PAR DÉFAUT) ==================== -->
+
+<!-- ===== SECTION VÉRIFICATION ===== -->
+<div id="verification-section" style="display:none;">
+  <div class="section-title" id="verification-title">🔍 Vérification des Participants</div>
+
+  <div class="card" style="margin-bottom: 20px; padding: 16px;">
+    <div class="verification-filters" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: end;">
+      <div class="filter-group" style="flex: 1; min-width: 160px;">
+        <label>Recherche</label>
+        <input type="text" id="verif-search" placeholder="Nom ou prénom..." oninput="applyVerificationFilters()" style="width:100%; padding:8px 12px; border:1px solid var(--ink-200); border-radius:6px;">
+      </div>
+      <div class="filter-group" style="flex: 1; min-width: 150px;">
+        <label>Club</label>
+        <select id="verif-club" onchange="applyVerificationFilters()" style="width:100%; padding:8px 12px; border:1px solid var(--ink-200); border-radius:6px;">
+          <option value="">Tous les clubs</option>
+        </select>
+      </div>
+      <div class="filter-group" style="flex: 1; min-width: 150px;">
+        <label>Catégorie</label>
+        <select id="verif-category" onchange="applyVerificationFilters()" style="width:100%; padding:8px 12px; border:1px solid var(--ink-200); border-radius:6px;">
+          <option value="">Toutes les catégories</option>
+        </select>
+      </div>
+      <div class="filter-group" style="flex: 1; min-width: 150px;">
+        <label>Wilaya</label>
+        <select id="verif-wilaya" onchange="applyVerificationFilters()" style="width:100%; padding:8px 12px; border:1px solid var(--ink-200); border-radius:6px;">
+          <option value="">Toutes les wilayas</option>
+        </select>
+      </div>
+      <div class="filter-group" style="flex: 0 0 auto;">
+        <button class="btn-primary btn-sm" onclick="loadVerificationData()">
+          <i class="ti ti-refresh"></i> Actualiser
+        </button>
+        <button class="btn-primary btn-sm" onclick="exportVerificationExcel()">
+          <i class="ti ti-file-spreadsheet"></i> Exporter
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--paper-200);">
+      <h4 id="verif-count">0 participants</h4>
+      <div>
+        <span id="verif-stats" style="font-size:13px;color:var(--ink-500);"></span>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="verification-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nom & Prénom</th>
+            <th>Poids (kg)</th>
+            <th>Sexe</th>
+            <th>Catégorie</th>
+            <th>Club</th>
+            <th>Wilaya</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="verification-tbody">
+          <tr><td colspan="8" style="text-align:center;color:#999;padding:30px;">Chargement des données...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION RÉSULTATS ===== -->
+<div id="results-section" style="display:none;">
+  <div class="section-title" id="results-title">🏆 Gestion des Résultats</div>
+  <div class="results-filters">
+    <div class="filter-group">
+      <label>Compétition</label>
+      <select id="filter-results-competition" onchange="loadResultsCategories()">
+        <option value="">-- Sélectionner --</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Catégorie</label>
+      <select id="filter-results-category" onchange="loadResultsParticipants()">
+        <option value="">-- Toutes --</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Poids min (kg)</label>
+      <input type="number" id="filter-weight-min" step="0.1" value="0" onchange="filterResults()">
+    </div>
+    <div class="filter-group">
+      <label>Poids max (kg)</label>
+      <input type="number" id="filter-weight-max" step="0.1" value="100" onchange="filterResults()">
+    </div>
+    <button class="btn-primary btn-sm" onclick="applyResultsFilters()"><i class="ti ti-filter"></i> Filtrer</button>
+  </div>
+  <div class="results-participants">
+    <div class="card">
+      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--paper-200);">
+        <h4>Participants</h4>
+        <div>
+          <button class="btn-primary btn-sm" onclick="saveResults()"><i class="ti ti-device-floppy"></i> Enregistrer</button>
+          <button class="btn-primary btn-sm" onclick="exportResultsExcel()"><i class="ti ti-file-spreadsheet"></i> Exporter Excel</button>
+          <button class="btn-primary btn-sm" onclick="generateDiplomas()"><i class="ti ti-certificate"></i> Générer Diplômes</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="results-table">
+          <thead><tr><th>#</th><th>الاسم واللقب</th><th>النادي</th><th>الوزن</th><th>الفئة</th><th>الرتبة</th><th>الميدالية</th><th>Action</th></tr></thead>
+          <tbody id="results-tbody"><tr><td colspan="8">Aucun participant</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION DIPLÔMES ===== -->
+<div id="diplomas-section" style="display:none;">
+  <div class="section-title" id="diplomas-title">📜 Génération de Diplômes</div>
+  <div class="diploma-controls">
+    <div class="filter-group">
+      <label>Compétition</label>
+      <select id="diploma-competition" onchange="loadDiplomaCategories()">
+        <option value="">-- Sélectionner --</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Catégorie</label>
+      <select id="diploma-category"><option value="">-- Toutes --</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Modèle de diplôme</label>
+      <select id="diploma-template">
+        <option value="default">Modèle par défaut</option>
+        <option value="elegant">Modèle Élégant</option>
+        <option value="sport">Modèle Sport</option>
+      </select>
+    </div>
+    <button class="btn-primary btn-sm" onclick="previewDiplomas()"><i class="ti ti-eye"></i> Aperçu</button>
+    <button class="btn-primary btn-sm" onclick="generateDiplomasPDF()"><i class="ti ti-file-pdf"></i> Générer PDF</button>
+    <button class="btn-primary btn-sm" onclick="exportDiplomasExcel()"><i class="ti ti-file-spreadsheet"></i> Exporter Excel</button>
+  </div>
+  <div id="diploma-preview" class="diploma-preview"></div>
+</div>
+
+<!-- ===== SECTION RAPPORTS ===== -->
+<section id="reports-section" style="display:none;">
+  <div class="section-title" id="reports-title">📊 Rapports</div>
+  <div class="card">
+    <div class="filter-bar" style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;padding:16px;">
+      <div style="flex:1;min-width:200px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--ink-500);margin-bottom:4px;">Compétition</label>
+        <select id="report-competition" onchange="window.generateReport()" class="form-select" style="width:100%;padding:8px 12px;border:1px solid var(--ink-200);border-radius:6px;background:white;">
+          <option value="">-- Sélectionner --</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary btn-sm" onclick="window.generateReport()"><i class="ti ti-file-description"></i> Générer</button>
+        <button class="btn-primary btn-sm" onclick="window.exportReportPDF()"><i class="ti ti-file-pdf"></i> Exporter PDF</button>
+        <button class="btn-outline btn-sm" onclick="window.exportReportExcel()"><i class="ti ti-file-spreadsheet"></i> Exporter Excel</button>
+      </div>
+    </div>
+    <div id="report-content" style="padding:20px;min-height:200px;">
+      <div class="report-placeholder" style="text-align:center;padding:50px;color:#999;">
+        <i class="ti ti-file-description" style="font-size:48px;display:block;margin-bottom:10px;"></i>
+        <p>Sélectionnez une compétition pour générer le rapport</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION CLASSEMENT DES CLUBS ===== -->
+<div id="club-rankings-section" style="display:none;">
+  <div class="section-title" id="rankings-title">🏅 Classement des Clubs</div>
+  <div class="rankings-controls">
+    <div class="filter-group">
+      <label>Compétition</label>
+      <select id="rankings-competition" onchange="loadClubRankings()">
+        <option value="">-- Toutes --</option>
+      </select>
+    </div>
+    <button class="btn-primary btn-sm" onclick="window.loadClubRankingsView()"><i class="ti ti-refresh"></i> Actualiser</button>
+    <button class="btn-primary btn-sm" onclick="exportRankingsExcel()"><i class="ti ti-file-spreadsheet"></i> Exporter Excel</button>
+  </div>
+  <div id="rankings-content" class="rankings-content">
+    <div class="rankings-placeholder"><i class="ti ti-trophy" style="font-size:48px;"></i><p>Chargement du classement...</p></div>
   </div>
 </div>
 
