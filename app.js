@@ -137,14 +137,14 @@ function fillWilayas(selId) {
     wilayas.map(w => `<option value="${w}">${w}</option>`).join('');
 }
 
-// ==================== CATEGORIES ====================
 async function loadCategories() {
   if (!sbClient) return;
   try {
     const { data, error } = await sbClient.from('categories').select('*').order('id');
     if (error) throw error;
-    if (data) CATEGORIES = data;
-   
+    if (data) {
+      CATEGORIES = data;
+    }
   } catch (err) {
     console.error('Error loading categories:', err);
   }
@@ -173,26 +173,47 @@ function showFlash(msg, type = 'ok') {
   flash._timer = setTimeout(() => flash.className = 'flash', 3000);
 }
 
+// ==================== FORMATER DATE POUR AFFICHAGE ====================
 function fmtDate(d) {
   if (!d) return '—';
-  const date = new Date(d);
-  if (currentLanguage === 'ar') {
-    return date.toLocaleDateString('ar-DZ', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
+  
+  // Si la date est au format ISO (YYYY-MM-DD)
+  if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+    const parts = d.split('-');
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
   }
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
+  
+  // Si c'est un objet Date ou une chaîne parsable
+  const date = new Date(d);
+  if (!isNaN(date.getTime())) {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+  
+  return '—';
 }
 
+// ==================== FORMATER DATE POUR INPUT ====================
 function fmtDateInput(d) {
   if (!d) return '';
+  
+  // Si la date est au format ISO, la convertir en dd/mm/yyyy
+  if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+    const parts = d.split('-');
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  
   const date = new Date(d);
-  return date.toISOString().split('T')[0];
+  if (!isNaN(date.getTime())) {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+  
+  return '';
 }
 
 function isPast(dl) {
@@ -1470,7 +1491,99 @@ window.renderClubMyRegs = async function() {
     setMain('<div class="error-msg">Erreur de chargement</div>');
   }
 }
-
+// ==================== SOUMETTRE L'INSCRIPTION ====================
+window.submitRegistration = async function() {
+  if (!regState.participants.length) {
+    showFlash(t('أضف مشاركين', 'Ajoutez des participants'), 'err');
+    return;
+  }
+  
+  try {
+    // Vérifier si une inscription existe déjà pour cette compétition et ce club
+    const { data: existing, error: checkError } = await sbClient
+      .from('registrations')
+      .select('id')
+      .eq('competition_id', regState.compId)
+      .eq('club_id', SESSION.clubId)
+      .single();
+    
+    if (checkError && checkError.code !== 'PGRST116') {
+      // Erreur autre que "not found"
+      throw checkError;
+    }
+    
+    if (existing) {
+      // Mise à jour : remplacer la liste des participants
+      const { error: updateError } = await sbClient
+        .from('registrations')
+        .update({ participants: regState.participants })
+        .eq('id', existing.id);
+      
+      if (updateError) throw updateError;
+      showFlash(t('تم تحديث التسجيل', 'Inscription mise à jour'));
+    } else {
+      // Nouvelle inscription
+      const { error: insertError } = await sbClient
+        .from('registrations')
+        .insert({ 
+          competition_id: regState.compId, 
+          club_id: SESSION.clubId, 
+          participants: regState.participants 
+        });
+      
+      if (insertError) throw insertError;
+      showFlash(t('تم حفظ التسجيل', 'Inscription enregistrée'));
+    }
+    
+    closeModal('modal-register');
+    window.renderClubHome();
+    
+  } catch (err) {
+    console.error('Erreur submitRegistration:', err);
+    showFlash('Erreur: ' + err.message, 'err');
+  }
+}
+// ==================== VALIDATION DATE FORMAT DD/MM/YYYY ====================
+function validateDateFormat(input) {
+  if (!input) return;
+  
+  // Supprimer les caractères non numériques
+  let value = input.value.replace(/[^0-9]/g, '');
+  
+  // Ajouter les slashs automatiquement
+  if (value.length >= 3 && value.length <= 4) {
+    value = value.substring(0, 2) + '/' + value.substring(2);
+  } else if (value.length >= 5 && value.length <= 6) {
+    value = value.substring(0, 2) + '/' + value.substring(2, 4) + '/' + value.substring(4);
+  } else if (value.length > 6) {
+    value = value.substring(0, 2) + '/' + value.substring(2, 4) + '/' + value.substring(4, 8);
+  }
+  
+  input.value = value;
+  
+  // Vérifier si le format est complet (10 caractères)
+  if (value.length === 10) {
+    const parts = value.split('/');
+    const day = parseInt(parts[0]);
+    const month = parseInt(parts[1]);
+    const year = parseInt(parts[2]);
+    
+    if (!isNaN(day) && !isNaN(month) && !isNaN(year) && 
+        day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 1900 && year <= 2100) {
+      input.style.borderColor = 'var(--green-500)';
+      input.style.backgroundColor = 'rgba(12, 92, 58, 0.05)';
+      input.dataset.valid = 'true';
+    } else {
+      input.style.borderColor = 'var(--red-500)';
+      input.style.backgroundColor = 'rgba(196, 30, 46, 0.05)';
+      input.dataset.valid = 'false';
+    }
+  } else {
+    input.style.borderColor = 'var(--ink-200)';
+    input.style.backgroundColor = '';
+    input.dataset.valid = 'false';
+  }
+}
 // ==================== MODIFIER UN PARTICIPANT ====================
 window.editParticipant = function(registrationId, participantIndex) {
   const isAr = currentLanguage === 'ar';
@@ -1488,6 +1601,12 @@ window.editParticipant = function(registrationId, participantIndex) {
         return;
       }
       
+      // Formater la date au format dd/mm/yyyy
+      let formattedDate = '';
+      if (participant.dob) {
+        formattedDate = fmtDateInput(participant.dob);
+      }
+      
       const existingModal = document.getElementById('edit-participant-modal');
       if (existingModal) existingModal.remove();
       
@@ -1500,19 +1619,20 @@ window.editParticipant = function(registrationId, participantIndex) {
             </div>
             <div class="modal-body">
               <div class="form-grid">
-                <div>
+                <div style="grid-column: span 2;">
                   <label>${isAr ? 'الاسم الكامل' : 'Nom complet'} *</label>
-                  <input type="text" id="edit-pname" value="${participant.name}">
+                  <input type="text" id="edit-pname" value="${participant.name || ''}">
                 </div>
                 <div>
-                  <label>${isAr ? 'تاريخ الميلاد' : 'Date de naissance'}</label>
-                  <input type="date" id="edit-pdob" value="${fmtDateInput(participant.dob)}">
+                  <label>${isAr ? 'تاريخ الميلاد' : 'Date de naissance'} *</label>
+                  <input type="text" id="edit-pdob" placeholder="jj/mm/aaaa" maxlength="10" value="${formattedDate}">
+                  <small style="display:block;font-size:11px;color:#999;margin-top:4px;">Exemple: 15/01/2000</small>
                 </div>
                 <div>
                   <label>${isAr ? 'الوزن (كغ)' : 'Poids (kg)'}</label>
                   <input type="number" step="0.1" id="edit-pweight" value="${participant.weight || ''}">
                 </div>
-                <div>
+                <div style="grid-column: span 2;">
                   <label>${isAr ? 'الجنس' : 'Sexe'}</label>
                   <select id="edit-pgender">
                     <option value="ذكور" ${participant.gender === 'ذكور' ? 'selected' : ''}>${isAr ? 'ذكر' : 'Homme'}</option>
@@ -1536,6 +1656,14 @@ window.editParticipant = function(registrationId, participantIndex) {
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = modalHtml;
       document.body.appendChild(tempDiv.firstElementChild);
+      
+      // Ajouter l'écouteur pour la validation de la date
+      const dobInput = document.getElementById('edit-pdob');
+      if (dobInput) {
+        dobInput.addEventListener('input', function() {
+          validateDateFormat(this);
+        });
+      }
       
       const modal = document.getElementById('edit-participant-modal');
       modal.addEventListener('click', function(e) {
@@ -1563,18 +1691,51 @@ window.closeEditModal = function() {
     }, 300);
   }
 }
-
 // ==================== SAUVEGARDER LES MODIFICATIONS ====================
 window.saveEditedParticipant = async function(registrationId, participantIndex) {
   const isAr = currentLanguage === 'ar';
   
   const name = document.getElementById('edit-pname').value.trim();
-  const dob = document.getElementById('edit-pdob').value;
+  const dobStr = document.getElementById('edit-pdob').value.trim();
   const weight = parseFloat(document.getElementById('edit-pweight').value);
   const gender = document.getElementById('edit-pgender').value;
   
-  if (!name || !dob) {
-    showFlash(isAr ? 'الاسم والتاريخ مطلوبان' : 'Nom et date requis', 'err');
+  // Validation du nom
+  if (!name) {
+    showFlash(isAr ? 'الاسم مطلوب' : 'Nom requis', 'err');
+    return;
+  }
+  
+  // Validation de la date
+  if (!dobStr) {
+    showFlash(isAr ? 'تاريخ الميلاد مطلوب' : 'Date de naissance requise', 'err');
+    return;
+  }
+  
+  // Convertir la date du format dd/mm/yyyy vers yyyy-mm-dd
+  let dob = null;
+  const dateParts = dobStr.split('/');
+  
+  if (dateParts.length !== 3) {
+    showFlash(isAr ? 'استخدم الصيغة jj/mm/aaaa' : 'Utilisez le format jj/mm/aaaa', 'err');
+    return;
+  }
+  
+  const day = parseInt(dateParts[0]);
+  const month = parseInt(dateParts[1]);
+  const year = parseInt(dateParts[2]);
+  
+  if (isNaN(day) || isNaN(month) || isNaN(year) || 
+      day < 1 || day > 31 || month < 1 || month > 12 || year < 1900 || year > 2100) {
+    showFlash(isAr ? 'تاريخ غير صحيح' : 'Date invalide', 'err');
+    return;
+  }
+  
+  // Convertir en format ISO pour la base de données
+  dob = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  
+  if (!name) {
+    showFlash(isAr ? 'الاسم مطلوب' : 'Nom requis', 'err');
     return;
   }
   
@@ -1586,6 +1747,11 @@ window.saveEditedParticipant = async function(registrationId, participantIndex) 
     }
     
     const participants = reg.participants || [];
+    if (participantIndex >= participants.length) {
+      showFlash(isAr ? 'Participant non trouvé' : 'Participant non trouvé', 'err');
+      return;
+    }
+    
     participants[participantIndex] = {
       ...participants[participantIndex],
       name,
@@ -1604,7 +1770,6 @@ window.saveEditedParticipant = async function(registrationId, participantIndex) 
     showFlash('Erreur: ' + err.message, 'err');
   }
 }
-
 // ==================== SUPPRIMER UN PARTICIPANT ====================
 window.deleteParticipant = function(registrationId, participantIndex) {
   const isAr = currentLanguage === 'ar';
@@ -1641,82 +1806,200 @@ window.openRegisterModal = async function(compId) {
   regState = { compId, participants: [] };
   try {
     const { data: comp } = await sbClient.from('competitions').select('*').eq('id', compId).single();
-    const { data: existing } = await sbClient.from('registrations').select('*').eq('competition_id', compId).eq('club_id', SESSION.clubId).single();
-    if (existing) regState.participants = existing.participants || [];
+    
+    // Récupérer l'inscription existante
+    const { data: existing } = await sbClient
+      .from('registrations')
+      .select('*')
+      .eq('competition_id', compId)
+      .eq('club_id', SESSION.clubId)
+      .single();
+    
+    if (existing) {
+      regState.participants = existing.participants || [];
+      regState.registrationId = existing.id;
+    } else {
+      regState.registrationId = null;
+    }
     
     document.getElementById('mreg-comp-ar').textContent = comp.name;
     document.getElementById('mreg-comp-en').textContent = comp.name_en;
-    const catSel = document.getElementById('mreg-pcat');
-    catSel.innerHTML = (comp.category_ids || []).map(cid => {
-      const cat = CATEGORIES.find(c => c.id === cid);
-      return cat ? `<option value="${cat.id}">${cat.name_fr}</option>` : '';
-    }).join('');
+    
+    // Plus besoin de remplir la liste des catégories
+    // La catégorie sera détectée automatiquement
+    
     clearParticipantForm();
     renderParticipantList();
     openModal('modal-register');
+    
+    // Ajouter les écouteurs d'événements
+    const dobInput = document.getElementById('mreg-pdob');
+    if (dobInput) {
+      dobInput.removeEventListener('input', validateDateFormat);
+      dobInput.addEventListener('input', function() {
+        validateDateFormat(this);
+        updateCategoryPreview(); // Mettre à jour l'aperçu
+      });
+      dobInput.placeholder = 'jj/mm/aaaa';
+    }
+    
+    const weightInput = document.getElementById('mreg-pweight');
+    if (weightInput) {
+      weightInput.removeEventListener('input', updateCategoryPreview);
+      weightInput.addEventListener('input', updateCategoryPreview);
+    }
+    
+    const genderSelect = document.getElementById('mreg-pgender');
+    if (genderSelect) {
+      genderSelect.removeEventListener('change', updateCategoryPreview);
+      genderSelect.addEventListener('change', updateCategoryPreview);
+    }
+    
   } catch (err) {
     console.error('Erreur openRegisterModal:', err);
     showFlash('Erreur: ' + err.message, 'err');
   }
 }
-
 function clearParticipantForm() {
   document.getElementById('mreg-pname').value = '';
   document.getElementById('mreg-pdob').value = '';
   document.getElementById('mreg-pweight').value = '';
   document.getElementById('mreg-pgender').value = 'ذكور';
+  
+  // Réinitialiser le style du champ date
+  const dobInput = document.getElementById('mreg-pdob');
+  if (dobInput) {
+    dobInput.style.borderColor = '';
+    dobInput.style.backgroundColor = '';
+    dobInput.dataset.valid = 'false';
+    dobInput.placeholder = 'jj/mm/aaaa';
+  }
+  
+  // Mettre à jour l'aperçu de la catégorie
+  updateCategoryPreview();
+}
+
+// ==================== APERÇU DE LA CATÉGORIE EN TEMPS RÉEL ====================
+function updateCategoryPreview() {
+  const previewEl = document.getElementById('mreg-category-preview');
+  if (!previewEl) return;
+  
+  const dobStr = document.getElementById('mreg-pdob').value.trim();
+  const weight = parseFloat(document.getElementById('mreg-pweight').value);
+  const gender = document.getElementById('mreg-pgender').value;
+  
+  if (!dobStr || isNaN(weight) || weight <= 0) {
+    previewEl.textContent = '📋 Remplissez la date et le poids pour détecter la catégorie';
+    previewEl.style.color = '#999';
+    return;
+  }
+  
+  const dateParts = dobStr.split('/');
+  if (dateParts.length !== 3) {
+    previewEl.textContent = '⚠️ Format de date invalide (jj/mm/aaaa)';
+    previewEl.style.color = '#c41e2e';
+    return;
+  }
+  
+  const day = parseInt(dateParts[0]);
+  const month = parseInt(dateParts[1]);
+  const year = parseInt(dateParts[2]);
+  
+  if (isNaN(day) || isNaN(month) || isNaN(year) || 
+      day < 1 || day > 31 || month < 1 || month > 12 || year < 1900 || year > 2100) {
+    previewEl.textContent = '⚠️ Date invalide';
+    previewEl.style.color = '#c41e2e';
+    return;
+  }
+  
+  const dob = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const result = determineCategory(dob, weight, gender);
+  const categoryName = result.displayName || result.name || 'À déterminer';
+  
+  if (result.id) {
+    previewEl.textContent = `🏆 Catégorie détectée: ${categoryName}`;
+    previewEl.style.color = '#0c5c3a';
+    previewEl.style.fontWeight = '600';
+  } else {
+    previewEl.textContent = `⚠️ Catégorie non trouvée: ${categoryName}`;
+    previewEl.style.color = '#c41e2e';
+  }
 }
 
 // ==================== AJOUT MANUEL ====================
 window.addManualParticipant = function() {
   const name = document.getElementById('mreg-pname').value.trim();
-  const dob = document.getElementById('mreg-pdob').value;
+  const dobStr = document.getElementById('mreg-pdob').value.trim();
   const weight = parseFloat(document.getElementById('mreg-pweight').value);
   const gender = document.getElementById('mreg-pgender').value;
-  const categoryId = document.getElementById('mreg-pcat').value;
   
-  if (!name || !dob) {
-    showFlash(t('الاسم والتاريخ مطلوبان', 'Nom et date requis'), 'err');
+  // Validation du nom
+  if (!name) {
+    showFlash(t('الاسم مطلوب', 'Nom requis'), 'err');
     return;
   }
   
-  let categoryName = 'À déterminer';
-  let catId = null;
-  let parentId = null;
-  let displayName = 'À déterminer';
+  // Validation du poids
+  if (isNaN(weight) || weight <= 0) {
+    showFlash(t('الوزن مطلوب', 'Poids requis'), 'err');
+    return;
+  }
   
-  // 1. Si une catégorie est sélectionnée manuellement
-  if (categoryId) {
-    const found = CATEGORIES.find(c => c.id === parseInt(categoryId));
-    if (found) {
-      categoryName = found.name_fr;
-      catId = found.id;
-      parentId = found.parent_id || null;
-      // Trouver le nom d'affichage
-      if (found.parent_id) {
-        const parent = CATEGORIES.find(p => p.id === found.parent_id);
-        displayName = parent ? `${parent.name_fr} - ${found.poids_fr || found.name_fr}` : found.name_fr;
-      } else {
-        displayName = found.name_fr;
-      }
-    }
-  } 
-  // 2. Sinon, déterminer automatiquement
-  else if (dob && !isNaN(weight) && weight > 0) {
-    const result = determineCategory(dob, weight, gender);
-    categoryName = result.name;
-    catId = result.id;
-    parentId = result.parentId;
-    displayName = result.displayName || categoryName;
+  // Validation de la date
+  if (!dobStr) {
+    showFlash(t('تاريخ الميلاد مطلوب', 'Date de naissance requise'), 'err');
+    return;
+  }
+  
+  // Vérifier le format dd/mm/yyyy
+  const dateParts = dobStr.split('/');
+  if (dateParts.length !== 3) {
+    showFlash(t('استخدم الصيغة jj/mm/aaaa', 'Utilisez le format jj/mm/aaaa'), 'err');
+    return;
+  }
+  
+  const day = parseInt(dateParts[0]);
+  const month = parseInt(dateParts[1]);
+  const year = parseInt(dateParts[2]);
+  
+  if (isNaN(day) || isNaN(month) || isNaN(year) || 
+      day < 1 || day > 31 || month < 1 || month > 12 || year < 1900 || year > 2100) {
+    showFlash(t('تاريخ غير صحيح', 'Date invalide'), 'err');
+    return;
+  }
+  
+  const dob = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  
+  // Déterminer automatiquement la catégorie
+  const result = determineCategory(dob, weight, gender);
+  
+  // Utiliser les résultats de la détection
+  let categoryName = result.displayName || result.name || 'À déterminer';
+  let catId = result.id; // Peut être null si non trouvé
+  let parentId = result.parentId;
+  
+  // Afficher un message si la catégorie n'est pas trouvée
+  if (!catId) {
+    showFlash(t('⚠️ Catégorie non trouvée, veuillez vérifier les critères', '⚠️ Catégorie non trouvée'), 'warn');
+  }
+  
+  // Vérifier les doublons
+  const exists = regState.participants.some(p => 
+    p.name.trim().toLowerCase() === name.trim().toLowerCase()
+  );
+  
+  if (exists) {
+    showFlash(t('هذا المشارك موجود بالفعل', 'Ce participant existe déjà'), 'err');
+    return;
   }
   
   regState.participants.push({ 
     name, 
-    dob, 
-    weight: isNaN(weight) ? null : weight, 
+    dob: dob,
+    weight: weight, 
     gender, 
-    category: displayName, // Utiliser le nom d'affichage complet
-    category_id: catId,
+    category: categoryName,
+    category_id: catId, // Peut être null
     parent_category_id: parentId,
     belt: '' 
   });
@@ -1725,7 +2008,9 @@ window.addManualParticipant = function() {
   renderParticipantList();
   showFlash(t('تمت الإضافة', 'Ajouté'));
 }
-// ==================== RENDER PARTICIPANT LIST - Version corrigée ====================
+
+
+// ==================== RENDER PARTICIPANT LIST (VERSION PROPRE) ====================
 function renderParticipantList() {
   const wrap = document.getElementById('mreg-list-wrap');
   if (!regState.participants.length) {
@@ -1736,21 +2021,43 @@ function renderParticipantList() {
   const isAr = currentLanguage === 'ar';
   
   const rows = regState.participants.map((p, i) => {
-    // Vérifier si la catégorie est "À déterminer"
-    const isUndetermined = p.category === 'À déterminer' || !p.category_id;
+    // Déterminer si la catégorie est valide
+    const isUndetermined = !p.category_id || p.category === 'À déterminer';
+    
+    // Formater la date
+    let formattedDate = '—';
+    if (p.dob) {
+      if (typeof p.dob === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.dob)) {
+        const parts = p.dob.split('-');
+        formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+      } else {
+        const date = new Date(p.dob);
+        if (!isNaN(date.getTime())) {
+          formattedDate = date.toLocaleDateString('fr-FR');
+        }
+      }
+    }
+    
+    // Afficher la catégorie avec son statut
+    const categoryDisplay = p.category || 'À déterminer';
+    const statusIcon = isUndetermined ? ' ⚠️' : ' ✅';
+    const statusColor = isUndetermined ? '#c41e2e' : 'var(--green-700)';
     
     return `
       <tr>
         <td>${i + 1}</td>
-        <td>${p.name}</td>
-        <td>${fmtDate(p.dob)}</td>
+        <td><strong>${p.name}</strong></td>
+        <td>${formattedDate}</td>
         <td>${p.weight ? p.weight + ' kg' : '—'}</td>
         <td>${p.gender}</td>
-        <td style="${isUndetermined ? 'color: #c41e2e; font-weight: 700;' : 'color: var(--green-700); font-weight: 600;'}"">
-          ${p.category || 'À déterminer'}
-          ${isUndetermined ? ' <span style="font-size: 10px; background: #fbe9eb; padding: 2px 6px; border-radius: 10px;">⚠️</span>' : ' ✅'}
+        <td style="color: ${statusColor}; font-weight: 600;">
+          ${categoryDisplay}${statusIcon}
         </td>
-        <td><button class="btn-red btn-sm" onclick="window.removeParticipant(${i})"><i class="ti ti-trash"></i></button></td>
+        <td>
+          <button class="btn-red btn-sm" onclick="window.removeParticipant(${i})">
+            <i class="ti ti-trash"></i>
+          </button>
+        </td>
       </tr>
     `;
   }).join('');
@@ -1778,32 +2085,6 @@ function renderParticipantList() {
   `;
 }
 
-window.removeParticipant = function(i) {
-  regState.participants.splice(i, 1);
-  renderParticipantList();
-}
-
-window.submitRegistration = async function() {
-  if (!regState.participants.length) {
-    showFlash(t('أضف مشاركين', 'Ajoutez des participants'), 'err');
-    return;
-  }
-  try {
-    const { data: existing } = await sbClient.from('registrations').select('id').eq('competition_id', regState.compId).eq('club_id', SESSION.clubId).single();
-    if (existing) {
-      await sbClient.from('registrations').update({ participants: regState.participants }).eq('id', existing.id);
-    } else {
-      await sbClient.from('registrations').insert({ competition_id: regState.compId, club_id: SESSION.clubId, participants: regState.participants });
-    }
-    showFlash(t('تم حفظ التسجيل', 'Inscription enregistrée'));
-    closeModal('modal-register');
-    window.renderClubHome();
-  } catch (err) {
-    console.error('Erreur submitRegistration:', err);
-    showFlash('Erreur: ' + err.message, 'err');
-  }
-}
-
 // ==================== FONCTIONS DE SÉLECTION MULTIPLE ====================
 window.selectAllCategories = function() {
   const sel = document.getElementById('mcomp-cats');
@@ -1828,7 +2109,7 @@ async function loadCategories() {
     if (error) throw error;
     if (data) {
       CATEGORIES = data;
-      debugCategories(); // Pour voir les catégories chargées
+       
     }
     
   } catch (err) {
@@ -3593,7 +3874,7 @@ async function loadClubRankings() {
     const rows = sorted.map((club, idx) => `
       <tr>
         <td>${idx + 1}</td>
-        <td><strong>${club.clubName}</strong> (${club.clubCode})</td>
+        <td><strong>${club.clubName}</strong> (${club.clubCode})</td>n 
         <td>🥇 ${club.gold}</td>
         <td>🥈 ${club.silver}</td>
         <td>🥉 ${club.bronze}</td>
@@ -5656,6 +5937,7 @@ function determineCategory(dob, weight, gender) {
   const birthYear = new Date(dob).getFullYear();
   const genderFr = gender === 'ذكور' ? 'Hommes' : 'Femmes';
   
+  console.log(`🔍 Recherche catégorie pour: ${genderFr}, année ${birthYear}, poids ${weight}kg`);
   
   // 1. Trouver la catégorie parent (par âge et genre)
   const parents = CATEGORIES.filter(c => !c.parent_id);
@@ -5664,13 +5946,13 @@ function determineCategory(dob, weight, gender) {
                   birthYear >= c.annee_min && 
                   birthYear <= c.annee_max;
     if (match) {
-      console.log(`✅ Catégorie parent trouvée: ${c.name_fr}`);
+      console.log(`✅ Catégorie parent trouvée: ${c.name_fr} (ID:${c.id})`);
     }
     return match;
   });
   
   if (!foundParent) {
-    console.log(`❌ Aucune catégorie parent trouvée`);
+    console.log(`❌ Aucune catégorie parent trouvée pour ${genderFr}, ${birthYear}`);
     return { name: 'À déterminer', id: null, parentId: null, displayName: 'À déterminer' };
   }
   
@@ -5689,12 +5971,14 @@ function determineCategory(dob, weight, gender) {
   
   // 3. Trouver la sous-catégorie par poids
   const foundChild = children.find(c => {
-    return weight >= c.poids_min && weight < c.poids_max;
+    const min = parseFloat(c.poids_min) || 0;
+    const max = parseFloat(c.poids_max) || 0;
+    return weight >= min && weight < max;
   });
   
   if (foundChild) {
     const displayName = `${foundParent.name_fr} - ${foundChild.poids_fr || foundChild.name_fr}`;
-    console.log(`✅ Sous-catégorie trouvée: ${displayName}`);
+    console.log(`✅ Sous-catégorie trouvée: ${displayName} (ID:${foundChild.id})`);
     return { 
       name: foundChild.name_fr, 
       id: foundChild.id, 
@@ -5793,6 +6077,7 @@ window.loadVerificationData = async function() {
             }
           }
           
+          // S'assurer que toutes les données sont présentes
           verificationData.push({
             registrationId: reg.id,
             participantIndex: idx,
@@ -5810,6 +6095,8 @@ window.loadVerificationData = async function() {
         });
       }
     });
+    
+    console.log('✅ verificationData chargé:', verificationData.length, 'participants');
     
     // Remplir les filtres
     populateVerificationFilters();
@@ -5863,6 +6150,14 @@ function populateVerificationFilters() {
 
 // ===== APPLIQUER LES FILTRES =====
 window.applyVerificationFilters = function() {
+  if (!verificationData || verificationData.length === 0) {
+    const tbody = document.getElementById('verification-tbody');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#999;padding:30px;">Aucun participant trouvé</td></tr>';
+    }
+    return;
+  }
+  
   const search = document.getElementById('verif-search')?.value.toLowerCase().trim() || '';
   const clubId = document.getElementById('verif-club')?.value || '';
   const category = document.getElementById('verif-category')?.value || '';
@@ -5870,28 +6165,24 @@ window.applyVerificationFilters = function() {
   
   let filtered = verificationData;
   
-  // Filtre recherche
   if (search) {
-    filtered = filtered.filter(p => p.name.toLowerCase().includes(search));
+    filtered = filtered.filter(p => p.name && p.name.toLowerCase().includes(search));
   }
   
-  // Filtre club
   if (clubId) {
     filtered = filtered.filter(p => p.clubId === parseInt(clubId));
   }
   
-  // Filtre catégorie
   if (category) {
     filtered = filtered.filter(p => p.category === category);
   }
   
-  // Filtre wilaya
   if (wilaya) {
     filtered = filtered.filter(p => p.wilaya === wilaya);
   }
   
   renderVerificationTable(filtered);
-}
+};
 
 // ===== RENDRE LE TABLEAU DE VÉRIFICATION =====
 function renderVerificationTable(data) {
@@ -5919,15 +6210,16 @@ function renderVerificationTable(data) {
     return;
   }
   
+  // Utiliser l'index réel dans le tableau data
   const rows = data.map((p, idx) => `
     <tr>
       <td>${idx + 1}</td>
-      <td><strong>${p.name}</strong></td>
+      <td><strong>${p.name || '—'}</strong></td>
       <td style="font-weight:600;color:${parseFloat(p.weight) > 0 ? 'var(--green-700)' : '#999'};">${p.weight || '—'}</td>
       <td>${p.gender === 'ذكور' ? (isAr ? 'ذكر' : 'Homme') : (isAr ? 'أنثى' : 'Femme')}</td>
-      <td>${p.category}</td>
-      <td>${p.clubName}</td>
-      <td>${p.wilaya}</td>
+      <td>${p.category || '—'}</td>
+      <td>${p.clubName || '—'}</td>
+      <td>${p.wilaya || '—'}</td>
       <td>
         <button class="btn-primary btn-sm" onclick="openEditParticipantModal(${idx})" title="${isAr ? 'تعديل' : 'Modifier'}">
           <i class="ti ti-edit"></i>
@@ -5938,10 +6230,40 @@ function renderVerificationTable(data) {
   
   tbody.innerHTML = rows;
 }
-
 // ===== OUVRIR LE MODAL D'ÉDITION =====
 window.openEditParticipantModal = function(index) {
+  console.log('=== OUVRIR MODAL ÉDITION ===');
+  console.log('Index reçu:', index, 'Type:', typeof index);
+  
+  // Si index est une chaîne, la convertir en nombre
+  if (typeof index === 'string') {
+    index = parseInt(index);
+  }
+  
+  // Vérifier que index est un nombre valide
+  if (isNaN(index) || index < 0) {
+    console.error('❌ Index invalide:', index);
+    showFlash('Erreur: Index invalide', 'err');
+    return;
+  }
+  
+  // Vérifier que verificationData existe
+  if (!verificationData || verificationData.length === 0) {
+    console.error('❌ verificationData est vide');
+    showFlash('Aucune donnée disponible', 'err');
+    return;
+  }
+  
+  // Vérifier que l'index existe dans verificationData
+  if (index >= verificationData.length) {
+    console.error('❌ Index hors limites:', index, 'Max:', verificationData.length - 1);
+    showFlash('Participant non trouvé', 'err');
+    return;
+  }
+  
   const p = verificationData[index];
+  console.log('Données du participant:', p);
+  
   if (!p) {
     showFlash('Participant non trouvé', 'err');
     return;
@@ -5949,7 +6271,7 @@ window.openEditParticipantModal = function(index) {
   
   const isAr = currentLanguage === 'ar';
   
-  // Remplir les champs
+  // Récupérer les éléments du modal
   const registrationIdEl = document.getElementById('edit-registration-id');
   const participantIndexEl = document.getElementById('edit-participant-index');
   const nameEl = document.getElementById('edit-participant-name');
@@ -5957,18 +6279,29 @@ window.openEditParticipantModal = function(index) {
   const genderEl = document.getElementById('edit-participant-gender');
   const dobEl = document.getElementById('edit-participant-dob');
   
+  // Vérifier que tous les éléments existent
   if (!registrationIdEl || !participantIndexEl || !nameEl || !weightEl || !genderEl || !dobEl) {
-    console.error('Éléments du modal non trouvés');
-    showFlash('Erreur: Modal non trouvé', 'err');
+    console.error('❌ Éléments du modal non trouvés');
+    showFlash('Erreur: Éléments du modal non trouvés', 'err');
     return;
   }
   
-  registrationIdEl.value = p.registrationId;
-  participantIndexEl.value = p.participantIndex;
-  nameEl.value = p.name;
+  // Remplir les champs avec les données
+  registrationIdEl.value = p.registrationId || '';
+  participantIndexEl.value = p.participantIndex || 0;
+  nameEl.value = p.name || '';
   weightEl.value = p.weight || '';
   genderEl.value = p.gender || 'ذكور';
   dobEl.value = p.dob || '';
+  
+  // VÉRIFICATION: Afficher les valeurs après remplissage
+  console.log('✅ Champs remplis:');
+  console.log('  - registrationId:', registrationIdEl.value);
+  console.log('  - participantIndex:', participantIndexEl.value);
+  console.log('  - name:', `"${nameEl.value}"`);
+  console.log('  - weight:', weightEl.value);
+  console.log('  - gender:', genderEl.value);
+  console.log('  - dob:', dobEl.value);
   
   // Mettre à jour les textes
   const titleEl = document.getElementById('edit-participant-title');
@@ -5989,78 +6322,9 @@ window.openEditParticipantModal = function(index) {
   
   // Ouvrir le modal
   openModal('modal-edit-participant');
-}
+};
 
-// ===== SAUVEGARDER LE PARTICIPANT MODIFIÉ =====
-window.saveEditedParticipant = async function() {
-  const isAr = currentLanguage === 'ar';
-  
-  const registrationId = parseInt(document.getElementById('edit-registration-id').value);
-  const participantIndex = parseInt(document.getElementById('edit-participant-index').value);
-  const name = document.getElementById('edit-participant-name').value.trim();
-  const weight = parseFloat(document.getElementById('edit-participant-weight').value);
-  const gender = document.getElementById('edit-participant-gender').value;
-  const dob = document.getElementById('edit-participant-dob').value;
-  
-  if (!name) {
-    showFlash(isAr ? 'الاسم مطلوب' : 'Le nom est requis', 'err');
-    return;
-  }
-  
-  if (!weight || weight <= 0) {
-    showFlash(isAr ? 'الوزن مطلوب' : 'Le poids est requis', 'err');
-    return;
-  }
-  
-  try {
-    // Récupérer l'enregistrement
-    const { data: reg, error } = await sbClient
-      .from('registrations')
-      .select('*')
-      .eq('id', registrationId)
-      .single();
-    
-    if (error) throw error;
-    
-    if (!reg) {
-      showFlash(isAr ? 'Enregistrement non trouvé' : 'Enregistrement non trouvé', 'err');
-      return;
-    }
-    
-    // Mettre à jour le participant
-    const participants = reg.participants || [];
-    if (participantIndex >= participants.length) {
-      showFlash(isAr ? 'Participant non trouvé' : 'Participant non trouvé', 'err');
-      return;
-    }
-    
-    participants[participantIndex] = {
-      ...participants[participantIndex],
-      name: name,
-      weight: weight,
-      gender: gender,
-      dob: dob || participants[participantIndex].dob
-    };
-    
-    // Sauvegarder
-    const { error: updateError } = await sbClient
-      .from('registrations')
-      .update({ participants: participants })
-      .eq('id', registrationId);
-    
-    if (updateError) throw updateError;
-    
-    closeModal('modal-edit-participant');
-    showFlash(isAr ? '✅ تم تعديل المشارك بنجاح' : '✅ Participant modifié avec succès');
-    
-    // Recharger les données
-    await loadVerificationData();
-    
-  } catch (err) {
-    console.error('Erreur saveEditedParticipant:', err);
-    showFlash('Erreur: ' + err.message, 'err');
-  }
-}
+
 
 // ===== EXPORTER LA VÉRIFICATION EN EXCEL =====
 window.exportVerificationExcel = function() {
