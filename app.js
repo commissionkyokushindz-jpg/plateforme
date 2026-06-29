@@ -137,14 +137,14 @@ function fillWilayas(selId) {
     wilayas.map(w => `<option value="${w}">${w}</option>`).join('');
 }
 
-// ==================== CATEGORIES ====================
 async function loadCategories() {
   if (!sbClient) return;
   try {
     const { data, error } = await sbClient.from('categories').select('*').order('id');
     if (error) throw error;
-    if (data) CATEGORIES = data;
-   
+    if (data) {
+      CATEGORIES = data;
+    }
   } catch (err) {
     console.error('Error loading categories:', err);
   }
@@ -1564,46 +1564,95 @@ window.closeEditModal = function() {
   }
 }
 
-// ==================== SAUVEGARDER LES MODIFICATIONS ====================
-window.saveEditedParticipant = async function(registrationId, participantIndex) {
+// ===== SAUVEGARDER LE PARTICIPANT MODIFIÉ =====
+window.saveEditedParticipant = async function() {
   const isAr = currentLanguage === 'ar';
   
-  const name = document.getElementById('edit-pname').value.trim();
-  const dob = document.getElementById('edit-pdob').value;
-  const weight = parseFloat(document.getElementById('edit-pweight').value);
-  const gender = document.getElementById('edit-pgender').value;
+  const registrationIdEl = document.getElementById('edit-registration-id');
+  const participantIndexEl = document.getElementById('edit-participant-index');
+  const nameEl = document.getElementById('edit-participant-name');
+  const weightEl = document.getElementById('edit-participant-weight');
+  const genderEl = document.getElementById('edit-participant-gender');
+  const dobEl = document.getElementById('edit-participant-dob');
   
-  if (!name || !dob) {
-    showFlash(isAr ? 'الاسم والتاريخ مطلوبان' : 'Nom et date requis', 'err');
+  if (!registrationIdEl || !participantIndexEl || !nameEl || !weightEl || !genderEl || !dobEl) {
+    showFlash(isAr ? 'خطأ في النموذج' : 'Erreur de formulaire', 'err');
     return;
   }
   
+  const registrationId = parseInt(registrationIdEl.value);
+  const participantIndex = parseInt(participantIndexEl.value);
+  const name = nameEl.value.trim();
+  const weight = parseFloat(weightEl.value);
+  const gender = genderEl.value;
+  const dob = dobEl.value;
+  
+  if (!name || name.length === 0) {
+    showFlash(isAr ? '⚠️ الاسم مطلوب' : '⚠️ Le nom est requis', 'err');
+    nameEl.style.borderColor = '#c41e2e';
+    nameEl.style.backgroundColor = '#fff0f0';
+    nameEl.focus();
+    return;
+  }
+  
+  if (isNaN(weight) || weight <= 0) {
+    showFlash(isAr ? '⚠️ الوزن مطلوب' : '⚠️ Le poids est requis', 'err');
+    weightEl.style.borderColor = '#c41e2e';
+    weightEl.style.backgroundColor = '#fff0f0';
+    weightEl.focus();
+    return;
+  }
+  
+  nameEl.style.borderColor = '';
+  nameEl.style.backgroundColor = '';
+  weightEl.style.borderColor = '';
+  weightEl.style.backgroundColor = '';
+  
   try {
-    const { data: reg } = await sbClient.from('registrations').select('*').eq('id', registrationId).single();
+    const { data: reg, error } = await sbClient
+      .from('registrations')
+      .select('*')
+      .eq('id', registrationId)
+      .single();
+    
+    if (error) throw error;
+    
     if (!reg) {
-      showFlash(isAr ? 'لم يتم العثور على التسجيل' : 'Inscription non trouvée', 'err');
+      showFlash(isAr ? '❌ Enregistrement non trouvé' : '❌ Enregistrement non trouvé', 'err');
       return;
     }
     
     const participants = reg.participants || [];
+    if (participantIndex >= participants.length) {
+      showFlash(isAr ? '❌ Participant non trouvé' : '❌ Participant non trouvé', 'err');
+      return;
+    }
+    
     participants[participantIndex] = {
       ...participants[participantIndex],
-      name,
-      dob,
-      weight: isNaN(weight) ? null : weight,
-      gender
+      name: name,
+      weight: weight,
+      gender: gender,
+      dob: dob || participants[participantIndex].dob
     };
     
-    await sbClient.from('registrations').update({ participants }).eq('id', registrationId);
+    const { error: updateError } = await sbClient
+      .from('registrations')
+      .update({ participants: participants })
+      .eq('id', registrationId);
     
-    window.closeEditModal();
-    showFlash(isAr ? 'تم تعديل المشارك بنجاح' : 'Participant modifié avec succès');
-    window.renderClubMyRegs();
+    if (updateError) throw updateError;
+    
+    closeModal('modal-edit-participant');
+    showFlash(isAr ? '✅ تم تعديل المشارك بنجاح' : '✅ Participant modifié avec succès');
+    
+    await loadVerificationData();
+    
   } catch (err) {
     console.error('Erreur saveEditedParticipant:', err);
     showFlash('Erreur: ' + err.message, 'err');
   }
-}
+};
 
 // ==================== SUPPRIMER UN PARTICIPANT ====================
 window.deleteParticipant = function(registrationId, participantIndex) {
@@ -1828,7 +1877,7 @@ async function loadCategories() {
     if (error) throw error;
     if (data) {
       CATEGORIES = data;
-      debugCategories(); // Pour voir les catégories chargées
+       
     }
     
   } catch (err) {
@@ -3593,7 +3642,7 @@ async function loadClubRankings() {
     const rows = sorted.map((club, idx) => `
       <tr>
         <td>${idx + 1}</td>
-        <td><strong>${club.clubName}</strong> (${club.clubCode})</td>
+        <td><strong>${club.clubName}</strong> (${club.clubCode})</td>n 
         <td>🥇 ${club.gold}</td>
         <td>🥈 ${club.silver}</td>
         <td>🥉 ${club.bronze}</td>
@@ -5863,6 +5912,14 @@ function populateVerificationFilters() {
 
 // ===== APPLIQUER LES FILTRES =====
 window.applyVerificationFilters = function() {
+  if (!verificationData || verificationData.length === 0) {
+    const tbody = document.getElementById('verification-tbody');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#999;padding:30px;">Aucun participant trouvé</td></tr>';
+    }
+    return;
+  }
+  
   const search = document.getElementById('verif-search')?.value.toLowerCase().trim() || '';
   const clubId = document.getElementById('verif-club')?.value || '';
   const category = document.getElementById('verif-category')?.value || '';
@@ -5870,28 +5927,24 @@ window.applyVerificationFilters = function() {
   
   let filtered = verificationData;
   
-  // Filtre recherche
   if (search) {
-    filtered = filtered.filter(p => p.name.toLowerCase().includes(search));
+    filtered = filtered.filter(p => p.name && p.name.toLowerCase().includes(search));
   }
   
-  // Filtre club
   if (clubId) {
     filtered = filtered.filter(p => p.clubId === parseInt(clubId));
   }
   
-  // Filtre catégorie
   if (category) {
     filtered = filtered.filter(p => p.category === category);
   }
   
-  // Filtre wilaya
   if (wilaya) {
     filtered = filtered.filter(p => p.wilaya === wilaya);
   }
   
   renderVerificationTable(filtered);
-}
+};
 
 // ===== RENDRE LE TABLEAU DE VÉRIFICATION =====
 function renderVerificationTable(data) {
@@ -5941,6 +5994,11 @@ function renderVerificationTable(data) {
 
 // ===== OUVRIR LE MODAL D'ÉDITION =====
 window.openEditParticipantModal = function(index) {
+  if (!verificationData || verificationData.length === 0) {
+    showFlash('Aucune donnée disponible', 'err');
+    return;
+  }
+  
   const p = verificationData[index];
   if (!p) {
     showFlash('Participant non trouvé', 'err');
@@ -5949,7 +6007,6 @@ window.openEditParticipantModal = function(index) {
   
   const isAr = currentLanguage === 'ar';
   
-  // Remplir les champs
   const registrationIdEl = document.getElementById('edit-registration-id');
   const participantIndexEl = document.getElementById('edit-participant-index');
   const nameEl = document.getElementById('edit-participant-name');
@@ -5958,19 +6015,17 @@ window.openEditParticipantModal = function(index) {
   const dobEl = document.getElementById('edit-participant-dob');
   
   if (!registrationIdEl || !participantIndexEl || !nameEl || !weightEl || !genderEl || !dobEl) {
-    console.error('Éléments du modal non trouvés');
-    showFlash('Erreur: Modal non trouvé', 'err');
+    showFlash('Erreur: Éléments du modal non trouvés', 'err');
     return;
   }
   
-  registrationIdEl.value = p.registrationId;
-  participantIndexEl.value = p.participantIndex;
-  nameEl.value = p.name;
+  registrationIdEl.value = p.registrationId || '';
+  participantIndexEl.value = p.participantIndex || 0;
+  nameEl.value = p.name || '';
   weightEl.value = p.weight || '';
   genderEl.value = p.gender || 'ذكور';
   dobEl.value = p.dob || '';
   
-  // Mettre à jour les textes
   const titleEl = document.getElementById('edit-participant-title');
   const nameLabelEl = document.getElementById('edit-name-label');
   const weightLabelEl = document.getElementById('edit-weight-label');
@@ -5987,80 +6042,10 @@ window.openEditParticipantModal = function(index) {
   if (saveBtnEl) saveBtnEl.textContent = isAr ? 'حفظ' : 'Enregistrer';
   if (cancelBtnEl) cancelBtnEl.textContent = isAr ? 'إلغاء' : 'Annuler';
   
-  // Ouvrir le modal
   openModal('modal-edit-participant');
-}
+};
 
-// ===== SAUVEGARDER LE PARTICIPANT MODIFIÉ =====
-window.saveEditedParticipant = async function() {
-  const isAr = currentLanguage === 'ar';
-  
-  const registrationId = parseInt(document.getElementById('edit-registration-id').value);
-  const participantIndex = parseInt(document.getElementById('edit-participant-index').value);
-  const name = document.getElementById('edit-participant-name').value.trim();
-  const weight = parseFloat(document.getElementById('edit-participant-weight').value);
-  const gender = document.getElementById('edit-participant-gender').value;
-  const dob = document.getElementById('edit-participant-dob').value;
-  
-  if (!name) {
-    showFlash(isAr ? 'الاسم مطلوب' : 'Le nom est requis', 'err');
-    return;
-  }
-  
-  if (!weight || weight <= 0) {
-    showFlash(isAr ? 'الوزن مطلوب' : 'Le poids est requis', 'err');
-    return;
-  }
-  
-  try {
-    // Récupérer l'enregistrement
-    const { data: reg, error } = await sbClient
-      .from('registrations')
-      .select('*')
-      .eq('id', registrationId)
-      .single();
-    
-    if (error) throw error;
-    
-    if (!reg) {
-      showFlash(isAr ? 'Enregistrement non trouvé' : 'Enregistrement non trouvé', 'err');
-      return;
-    }
-    
-    // Mettre à jour le participant
-    const participants = reg.participants || [];
-    if (participantIndex >= participants.length) {
-      showFlash(isAr ? 'Participant non trouvé' : 'Participant non trouvé', 'err');
-      return;
-    }
-    
-    participants[participantIndex] = {
-      ...participants[participantIndex],
-      name: name,
-      weight: weight,
-      gender: gender,
-      dob: dob || participants[participantIndex].dob
-    };
-    
-    // Sauvegarder
-    const { error: updateError } = await sbClient
-      .from('registrations')
-      .update({ participants: participants })
-      .eq('id', registrationId);
-    
-    if (updateError) throw updateError;
-    
-    closeModal('modal-edit-participant');
-    showFlash(isAr ? '✅ تم تعديل المشارك بنجاح' : '✅ Participant modifié avec succès');
-    
-    // Recharger les données
-    await loadVerificationData();
-    
-  } catch (err) {
-    console.error('Erreur saveEditedParticipant:', err);
-    showFlash('Erreur: ' + err.message, 'err');
-  }
-}
+
 
 // ===== EXPORTER LA VÉRIFICATION EN EXCEL =====
 window.exportVerificationExcel = function() {
