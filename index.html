@@ -61,7 +61,7 @@
         <h2 id="login-title">Connexion</h2>
         <div class="input-group">
           <label id="email-label">Email</label>
-          <input type="text" id="login-email" placeholder="email/username">
+          <input type="text" id="login-email" placeholder="admin@kyokushin.dz">
         </div>
         <div class="input-group">
           <label id="password-label">Mot de passe</label>
@@ -77,7 +77,7 @@
       </div>
 
       <div class="login-footer">
-        <div class="footer-dev">© 2026 — Développé par Benaissa.Z</div>
+        <div class="footer-dev">© 2026 — Développé par Benaissa.Zakaria</div>
       </div>
     </div>
   </div>
@@ -249,21 +249,44 @@
     <div class="modal-body">
       <div class="info-box"><a href="#" id="download-template-link"><i class="ti ti-file-spreadsheet"></i> Télécharger le modèle Excel</a></div>
       <div class="file-drop" id="excel-upload-area"><div><i class="ti ti-upload" style="font-size:20px;display:block;margin-bottom:6px;"></i>Cliquez ou glissez-déposez un fichier Excel (.xlsx)</div><input type="file" id="excel-upload-input" accept=".xlsx,.xls" style="display:none"></div>
+      
       <div class="section-title" id="manual-title" style="font-size:15px;">Ajouter manuellement</div>
       <div class="form-grid" id="mreg-dynamic-fields">
-        <div><label>Nom complet *</label><input id="mreg-pname" type="text"></div>
-        <div><label>Date naissance</label><input id="mreg-pdob" type="date"></div>
-        <div><label>Poids (kg)</label><input id="mreg-pweight" type="number" step="0.1"></div>
-        <div><label>Sexe</label><select id="mreg-pgender"><option>ذكور</option><option>إناث</option></select></div>
-        <div><label>Catégorie</label><select id="mreg-pcat"></select></div>
+        <div style="grid-column: span 2;">
+          <label>Nom complet *</label>
+          <input id="mreg-pname" type="text" placeholder="محمد زكرياء ">
+        </div>
+        <div>
+          <label>Date naissance (jj/mm/aaaa) *</label>
+          <input id="mreg-pdob" type="text" placeholder="jj/mm/aaaa" maxlength="10" />
+          <small style="display:block;font-size:11px;color:#999;margin-top:4px;">Exemple: 15/01/2000</small>
+        </div>
+        <div>
+          <label>Poids (kg) *</label>
+          <input id="mreg-pweight" type="number" step="0.1" placeholder="Ex: 65">
+        </div>
+        <div style="grid-column: span 2;">
+          <label>Sexe *</label>
+          <select id="mreg-pgender">
+            <option value="ذكور">Homme</option>
+            <option value="إناث">Femme</option>
+          </select>
+        </div>
+        <!-- La catégorie est automatiquement détectée, affichage informatif -->
+        <div style="grid-column: span 2; background: #f0f7f3; padding: 8px 12px; border-radius: 6px; border: 1px solid #d4e8dc;">
+          <span style="font-size: 13px; color: #0c5c3a;">
+            <i class="ti ti-info-circle"></i> 
+            <span id="mreg-category-preview">Catégorie détectée automatiquement</span>
+          </span>
+        </div>
       </div>
+      
       <button class="btn-primary btn-sm" onclick="addManualParticipant()" id="add-btn"><i class="ti ti-plus"></i> Ajouter</button>
       <div id="mreg-list-wrap"></div>
       <div class="modal-buttons"><button class="btn-primary" onclick="submitRegistration()" id="confirm-btn">Confirmer l'inscription</button><button class="btn-outline" onclick="closeModal('modal-register')">Annuler</button></div>
     </div>
   </div>
 </div>
-
 <!-- ===== MODAL ÉDITION PARTICIPANT (VÉRIFICATION) ===== -->
 <div id="modal-edit-participant" class="modal">
   <div class="modal-content" style="max-width: 500px;">
@@ -292,53 +315,9 @@
           </select>
         </div>
         <div style="grid-column: span 2;">
-          <label id="edit-dob-label">Date de naissance</label>
-          <input id="edit-participant-dob" type="date">
-        </div>
-      </div>
-      
-      <div class="modal-buttons">
-        <button class="btn-primary" onclick="saveEditedParticipant()">
-          <i class="ti ti-device-floppy"></i> <span id="edit-save-btn">Enregistrer</span>
-        </button>
-        <button class="btn-outline" onclick="closeModal('modal-edit-participant')">
-          <span id="edit-cancel-btn">Annuler</span>
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== MODAL ÉDITION PARTICIPANT (VÉRIFICATION) ===== -->
-<div id="modal-edit-participant" class="modal">
-  <div class="modal-content" style="max-width: 500px;">
-    <div class="modal-header">
-      <h3 id="edit-participant-title">Modifier le participant</h3>
-      <button class="modal-close" onclick="closeModal('modal-edit-participant')">&times;</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="edit-registration-id">
-      <input type="hidden" id="edit-participant-index">
-      
-      <div class="form-grid">
-        <div style="grid-column: span 2;">
-          <label id="edit-name-label">Nom complet *</label>
-          <input id="edit-participant-name" type="text">
-        </div>
-        <div>
-          <label id="edit-weight-label">Poids (kg) *</label>
-          <input id="edit-participant-weight" type="number" step="0.1">
-        </div>
-        <div>
-          <label id="edit-gender-label">Sexe</label>
-          <select id="edit-participant-gender">
-            <option value="ذكور">Homme</option>
-            <option value="إناث">Femme</option>
-          </select>
-        </div>
-        <div style="grid-column: span 2;">
-          <label id="edit-dob-label">Date de naissance</label>
-          <input id="edit-participant-dob" type="date">
+          <label id="edit-dob-label">Date de naissance (jj/mm/aaaa) *</label>
+          <input id="edit-participant-dob" type="text" placeholder="jj/mm/aaaa" maxlength="10" />
+          <small style="display:block;font-size:11px;color:#999;margin-top:4px;">Exemple: 15/01/2000</small>
         </div>
       </div>
       
