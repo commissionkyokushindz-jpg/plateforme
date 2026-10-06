@@ -1921,17 +1921,724 @@ tbody td:first-child {
   }
 }
    /* Responsive */
-   @media (max-width: 768px) {
-     .results-filters,
-     .diploma-controls,
-     .reports-controls,
-     .rankings-controls {
-       flex-direction: column;
-     }
-     
-     .filter-group {
-       width: 100%;
-     }
-   }
+@media (max-width: 768px) {
+      .results-filters,
+      .diploma-controls,
+      .reports-controls,
+      .rankings-controls {
+        flex-direction: column;
+      }
+      
+      .filter-group {
+        width: 100%;
+      }
+    }
+
+    /* ===== SECTION ÉQUIPE NATIONALE ===== */
+    #selection-equipe-section .section-title {
+      margin-bottom: 16px;
+    }
+
+    #selection-equipe-section .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--paper-200);
+      margin-bottom: 12px;
+    }
+
+    #selection-equipe-section .card-body {
+      padding: 16px;
+    }
+
+    /* Athlete block */
+    .athlete-block {
+      background: var(--paper-0);
+      border: 1px solid var(--paper-200);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 16px;
+      position: relative;
+      transition: box-shadow .15s;
+    }
+    .athlete-block:hover {
+      box-shadow: var(--shadow-sm);
+    }
+    .athlete-block.selected {
+      border-color: var(--green-600);
+      box-shadow: 0 0 0 3px var(--green-100);
+    }
+
+    .athlete-block .remove-athlete {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--red-100);
+      color: var(--red-700);
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .athlete-block .remove-athlete:hover {
+      background: var(--red-700);
+      color: #fff;
+    }
+
+    .athlete-block .athlete-title {
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--paper-200);
+    }
+
+    /* Form fields within athlete block */
+    .athlete-fields .form-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .athlete-fields label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-700);
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .athlete-fields input,
+    .athlete-fields select {
+      padding: 8px 10px;
+      border: 1px solid var(--paper-200);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      background: var(--paper-50);
+      width: 100%;
+      transition: border-color .15s;
+    }
+    .athlete-fields input:focus,
+    .athlete-fields select:focus {
+      outline: none;
+      border-color: var(--green-600);
+      background: #fff;
+    }
+
+    /* Weight selector */
+    .weight-selector {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .weight-btn {
+      background: var(--paper-50);
+      border: 1px solid var(--paper-200);
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      transition: background .15s, border-color .15s;
+    }
+    .weight-btn:hover {
+      background: var(--green-100);
+      border-color: var(--green-600);
+    }
+    .weight-value {
+      font-family: var(--font-fr);
+      font-size: 14px;
+      font-weight: 700;
+      min-width: 40px;
+      text-align: center;
+    }
+    .weight-value.units {
+      color: var(--ink-700);
+    }
+
+    /* Diploma drag & drop */
+    .dirop-area {
+      border: 2px dashed var(--paper-200);
+      border-radius: var(--radius-md);
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      color: var(--ink-500);
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 12px;
+      transition: border-color .15s, background .15s;
+      background: var(--paper-50);
+    }
+    .dirop-area:hover {
+      border-color: var(--green-600);
+      background: var(--green-100);
+    }
+    .dirop-area input {
+      position: absolute;
+      left: -9999px;
+    }
+
+    /* Sélection Équipe Nationale — zone de dépôt diplôme */
+    .dropzone {
+      position: relative;
+      z-index: 1;
+      border: 2px dashed var(--paper-200);
+      border-radius: var(--radius-md);
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      color: var(--ink-500);
+      font-size: 13px;
+      font-weight: 600;
+      transition: border-color .15s, background .15s;
+      background: var(--paper-50);
+    }
+    .dropzone:hover {
+      border-color: var(--green-600);
+      background: var(--green-100);
+    }
+    .dropzone.dragover {
+      border-color: var(--green-600);
+      background: var(--green-100);
+      border-style: solid;
+      color: var(--green-700, #0c5c3a);
+    }
+    .dropzone.click-flash {
+      border-color: var(--green-600);
+      background: var(--green-100);
+    }
+    .dropzone-label {
+      display: inline-block;
+      color: var(--green-600);
+      text-decoration: underline;
+    }
+
+    /* Spinner de chargement (affichage immédiat) */
+    .loading-spinner {
+      width: 36px;
+      height: 36px;
+      margin: 32px auto;
+      border: 3px solid var(--paper-200);
+      border-top-color: var(--green-600);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Aperçu du diplôme déposé */
+    .dropzone-preview {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      padding: 10px 12px;
+      border: 1px solid var(--paper-200);
+      border-radius: var(--radius-md);
+      background: var(--paper-50);
+    }
+    .dropzone-preview[style*="display:none"],
+    .dropzone-preview[style*="display: none"] {
+      display: none !important;
+    }
+    .dropzone-preview .btn-remove {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 22px;
+      height: 22px;
+      border: none;
+      border-radius: 50%;
+      background: #c0392b;
+      color: #fff;
+      font-size: 12px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+      transition: background .15s;
+    }
+    .dropzone-preview .btn-remove:hover {
+      background: #96281b;
+    }
+
+    /* List of saved athletes */
+    #athletes-saved-list .athlete-summary {
+      background: var(--paper-0);
+      border: 1px solid var(--paper-200);
+      border-radius: var(--radius-lg);
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+    #athletes-saved-list .athlete-summary.remove {
+      border-color: var(--red-700);
+    }
+    #athletes-saved-list .athlete-summary.remove:hover {
+      background: var(--red-100);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      #selection-equipe-section .card-body {
+        padding: 10px;
+      }
+      .athlete-fields .form-grid {
+        grid-template-columns: 1fr;
+      }
+      .weight-selector {
+        flex-direction: column;
+        gap: 4px;
+      }
+      .weight-btn {
+        width: 100%;
+      }
+    }
 
    
+
+/* ==================== SÉLECTION ÉQUIPE NATIONALE — VUE ADMIN ==================== */
+
+/* Barre de filtres horizontale responsive */
+.filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  background: var(--paper-50);
+  border: 1px solid var(--paper-200);
+  border-radius: var(--radius-md);
+}
+.filters-bar .filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 150px;
+}
+.filters-bar .filter-item label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--ink-500);
+}
+.filters-bar select,
+.filters-bar input[type="text"] {
+  padding: 9px 10px;
+  border: 1px solid var(--paper-200);
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  min-height: 38px;
+}
+.filters-bar .filter-item-search {
+  flex: 1 1 220px;
+}
+.filters-bar .filter-item-search input {
+  width: 100%;
+}
+.filters-bar .filter-item-actions {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+@media (max-width: 720px) {
+  .filters-bar .filter-item { min-width: 100%; }
+  .filters-bar .filter-item-actions { margin-left: 0; width: 100%; }
+  .filters-bar .filter-item-actions .btn-primary,
+  .filters-bar .filter-item-actions .btn-outline { flex: 1; }
+}
+
+/* Cartes de statistiques */
+.admin-stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.stat-card {
+  background: #fff;
+  border: 1px solid var(--paper-200);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .03);
+}
+.stat-card .stat-value {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--green-600, #0c7a4e);
+  line-height: 1.1;
+}
+.stat-card .stat-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--ink-500);
+  margin-bottom: 8px;
+}
+.stat-card .stat-value + .stat-label {
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+/* Répartition (barres horizontales) */
+.bd-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+.bd-row .bd-label {
+  flex: 0 0 78px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink-700, #333);
+  font-weight: 600;
+}
+.bd-row .bd-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--paper-200);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.bd-row .bd-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--green-600, #0c7a4e), var(--green-400, #2fae7a));
+  border-radius: 5px;
+}
+.bd-row .bd-count {
+  flex: 0 0 auto;
+  min-width: 24px;
+  text-align: right;
+  font-weight: 700;
+  color: var(--ink-700, #333);
+}
+.breakdown-empty {
+  color: var(--ink-500);
+  font-size: 13px;
+  padding-top: 6px;
+}
+
+/* Badge de compteur */
+.badge-count {
+  display: inline-block;
+  min-width: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--green-100, #e6f4ec);
+  color: var(--green-700, #0c5c3a);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* Tableau propre avec alternance de lignes */
+.athlete-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.athlete-table thead th {
+  text-align: left;
+  padding: 11px 12px;
+  background: var(--paper-50, #fbfaf8);
+  border-bottom: 2px solid var(--paper-200);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--ink-500);
+  white-space: nowrap;
+}
+.athlete-table tbody td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--paper-200);
+  vertical-align: middle;
+}
+.athlete-table tbody tr:nth-child(even) {
+  background: var(--paper-50, #fbfaf8);
+}
+.athlete-table tbody tr:hover {
+  background: var(--green-100, #e6f4ec);
+}
+.table-card {
+  padding: 0;
+  overflow-x: auto;
+}
+
+/* Ligne d'association cliquable */
+.association-row {
+  cursor: pointer;
+  transition: background .12s;
+}
+.association-row:hover {
+  background: var(--green-100, #e6f4ec);
+}
+.association-row .assoc-icon {
+  margin-right: 6px;
+}
+.athlete-table .actions-cell {
+  white-space: nowrap;
+  text-align: right;
+}
+.athlete-table .actions-cell .btn-sm + .btn-sm {
+  margin-left: 6px;
+}
+.athlete-table .muted {
+  color: var(--ink-500);
+}
+.diploma-link {
+  color: var(--green-600, #0c7a4e);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.diploma-link:hover {
+  text-decoration: underline;
+}
+.sel-result-count {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--ink-500);
+}
+.modal-section-caption {
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-700, #333);
+}
+.athlete-edit-row input[type="text"],
+.athlete-edit-row input[type="date"],
+.athlete-edit-row input[type="number"],
+.athlete-edit-row select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--paper-200);
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+}
+.athlete-edit-row .ae-sign {
+  display: inline-block;
+  width: 56px;
+  margin-right: 4px;
+}
+.athlete-edit-row .ae-weight {
+  display: inline-block;
+  width: 76px;
+}
+
+/* Modale détails association : large */
+#modal-association-details .modal-content {
+  max-width: 900px;
+  width: 95vw;
+}
+#modal-association-details .modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+#modal-association-details .modal-body .empty-card {
+  padding: 32px;
+  text-align: center;
+}
+
+/* ==================== UPLOAD DIPLÔME : ÉTAT DE CHARGEMENT ==================== */
+.dropzone.uploading {
+  pointer-events: none;
+  opacity: .7;
+  border-style: solid;
+  border-color: var(--green-600, #0c7a4e);
+  background: var(--green-100, #e6f4ec);
+}
+.dropzone-status {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.dropzone-status.is-loading {
+  color: var(--green-700, #0c5c3a);
+}
+.dropzone-status.is-done {
+  color: var(--green-700, #0c5c3a);
+}
+.dropzone-status.is-error {
+  color: #c0392b;
+}
+.upload-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border: 2px solid rgba(12, 92, 58, .25);
+  border-top-color: var(--green-700, #0c5c3a);
+  border-radius: 50%;
+  vertical-align: -2px;
+  animation: spin .7s linear infinite;
+}
+
+/* ===== Sélection équipe nationale — association manquante / rattachement ===== */
+.btn-warning {
+  background: #fff;
+  color: #b45309;
+  border: 1px solid #f0b429;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.btn-warning:hover {
+  background: #fff7e6;
+}
+.stat-card-warning {
+  border-color: #f0b429;
+  background: #fffdf5;
+}
+.stat-card-warning .stat-value {
+  color: #b45309;
+}
+.warning-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+  padding: 12px 16px;
+  background: #fff7e6;
+  border: 1px solid #f0b429;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+}
+.association-row-orphan {
+  background: #fffdf5;
+}
+.association-row-orphan td:first-child strong {
+  color: #b45309;
+}
+.association-row-orphan:hover {
+  background: #fff7e6;
+}
+#modal-associate-bulk .modal-content {
+  max-width: 640px;
+}
+
+/* Modale rattachement en masse : liste des athlètes orphelins */
+.bulk-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  background: var(--paper-100, #f7f5ef);
+  border: 1px solid var(--paper-200, #e8e3d7);
+  border-radius: 8px;
+}
+.bulk-check-all-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 0;
+}
+.bulk-preview {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-600, #4b4b45);
+}
+.bulk-preview span {
+  display: inline-block;
+  min-width: 32px;
+  padding: 1px 8px;
+  margin-left: 4px;
+  background: #fff;
+  border: 1px solid var(--paper-300, #d9d3c4);
+  border-radius: 999px;
+  text-align: center;
+}
+.bulk-athlete-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--paper-200, #e8e3d7);
+  border-radius: 8px;
+  background: #fff;
+}
+.bulk-athlete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--paper-100, #f2efe7);
+  cursor: pointer;
+  font-size: 13px;
+  margin: 0;
+}
+.bulk-athlete:last-child {
+  border-bottom: none;
+}
+.bulk-athlete:hover {
+  background: var(--paper-100, #f7f5ef);
+}
+.bulk-athlete input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--green-700, #0c5c3a);
+  cursor: pointer;
+}
+.bulk-athlete-name {
+  flex: 1 1 auto;
+  font-weight: 600;
+  color: var(--ink-700, #2b2b28);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bulk-athlete-meta {
+  flex: 0 0 auto;
+  color: var(--ink-500, #7a7770);
+  font-size: 12px;
+}
+.bulk-athlete-flag {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: #b45309;
+  background: #fff7e6;
+  border: 1px solid #f0b429;
+  border-radius: 999px;
+  padding: 1px 7px;
+}

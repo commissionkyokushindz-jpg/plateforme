@@ -522,6 +522,94 @@
   </div>
 </div>
 
+<!-- ===== SECTION ÉQUIPE NATIONALE ===== -->
+<div id="selection-equipe-section" style="display:none;">
+  <div class="section-title" id="selection-equipe-title">Sélection de l'Équipe Nationale</div>
+
+  <!-- ===== VUE ADMIN : tableau de bord ===== -->
+  <div id="selection-admin-view" style="display:none;">
+    <div id="selection-admin-content"></div>
+  </div>
+
+  <!-- ===== VUE CLUB : formulaire de saisie ===== -->
+  <div id="selection-club-view">
+  <div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--paper-200);">
+      <h4 id="athletes-count-label">Nombre d'athlètes</h4>
+      <div>
+        <input type="number" id="athletes-count" min="1" value="1" style="width:100px; padding:8px; border:1px solid var(--paper-200); border-radius:6px;">
+      </div>
+    </div>
+    <div class="card-body" id="athletes-container">
+      <!-- Athlète blocs générés dynamiquement -->
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--paper-200);">
+      <button id="btn-add-athlete" class="btn-primary" style="width:100%;">Athlète ajouté</button>
+      <button id="btn-save" class="btn-primary" style="width:100%; margin-top:8px;">Enregistrer</button>
+    </div>
+  </div>
+  </div>
+
+  <div id="saved-athletes-list" style="display:none;margin-top:24px;">
+    <div class="section-title">Athlètes enregistrés</div>
+    <div id="athletes-saved-list"></div>
+  </div>
+</div>
+
+<!-- ===== MODALE DÉTAILS ASSOCIATION ===== -->
+<div id="modal-association-details" class="modal modal-large">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div>
+        <h3 id="assoc-det-title">Association</h3>
+        <div id="assoc-det-subtitle" style="font-size:13px;color:var(--ink-500);font-weight:500;"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-association-details')">&times;</button>
+    </div>
+    <div class="modal-body" id="assoc-details-body"></div>
+  </div>
+</div>
+
+<!-- ===== MODALE RATTACHEMENT EN MASSE ===== -->
+<div id="modal-associate-bulk" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div>
+        <h3>Associer des athlètes à une association</h3>
+        <div id="bulk-orphan-count" style="font-size:13px;color:var(--ink-500);font-weight:500;"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-associate-bulk')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--ink-500);margin-bottom:16px;">
+        Ces athlètes n'ont <strong>aucune association résolue</strong> (<code>club_id</code> vide ou FK non résolue).
+        Cochez les athlètes concernés puis choisissez l'association.
+      </p>
+
+      <div class="filter-item" style="margin-bottom:14px;">
+        <label>Association cible</label>
+        <select id="bulk-assoc-select" style="width:100%;"></select>
+      </div>
+
+      <div class="bulk-list-head">
+        <label class="bulk-check-all-label">
+          <input type="checkbox" id="bulk-check-all" checked onchange="toggleBulkAll(this.checked)">
+          <span>Tout sélectionner</span>
+        </label>
+        <span class="bulk-preview">
+          Sélectionnés : <span id="bulk-preview-count">0</span>
+        </span>
+      </div>
+
+      <div id="bulk-athlete-list" class="bulk-athlete-list"></div>
+    </div>
+    <div class="modal-buttons">
+      <button type="button" class="btn-primary" id="bulk-apply-btn" onclick="bulkAssignClub()">Associer</button>
+      <button type="button" class="btn-outline" onclick="closeModal('modal-associate-bulk')">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <script src="app.js"></script>
 </body>
 </html>
