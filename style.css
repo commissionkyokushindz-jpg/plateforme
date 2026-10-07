@@ -2642,3 +2642,17 @@ tbody td:first-child {
   border-radius: 999px;
   padding: 1px 7px;
 }
+
+/* Message d'aide sous un formulaire (ex. mot de passe du club) */
+.form-hint {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--green-800, #0c5c3a);
+  background: var(--green-50, #eef7f2);
+  border: 1px solid var(--green-200, #bfe0d1);
+  border-left: 3px solid var(--green-700, #0c5c3a);
+  border-radius: 6px;
+}
+
