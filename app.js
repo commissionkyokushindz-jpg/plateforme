@@ -1,4 +1,4 @@
-﻿// ==================== CONFIGURATION ====================
+// ==================== CONFIGURATION ====================
 const SB_URL = 'https://ltaieqdfssorxskgxijx.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0YWllcWRmc3Nvcnhza2d4aWp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMzAyODksImV4cCI6MjEwNjgwNjI4OX0.z77wd3RWCtlJdvfLTKVKdYtCpz0XoL_LIXw8OTybdc8';
 
@@ -941,7 +941,9 @@ window.renderAdminClubs = async function() {
 window.openNewClub = function() {
   fillWilayas('mclub-wilaya');
   document.getElementById('mclub-id').value = '';
-  ['mclub-email', 'mclub-password', 'mclub-name', 'mclub-code', 'mclub-responsable', 'mclub-phone'].forEach(id => document.getElementById(id).value = '');
+  ['mclub-email', 'mclub-password', 'mclub-name', 'mclub-responsable', 'mclub-phone'].forEach(id => document.getElementById(id).value = '');
+  const pwHint = document.getElementById('mclub-password-hint');
+  if (pwHint) pwHint.style.display = '';
   document.getElementById('modal-club-title').textContent = t('نادي جديد', 'Nouveau club');
   openModal('modal-club');
 }
@@ -954,12 +956,13 @@ window.editClub = async function(id) {
     if (c) {
       document.getElementById('mclub-id').value = c.id;
       document.getElementById('mclub-email').value = c.email;
-      document.getElementById('mclub-password').value = c.password;
+      document.getElementById('mclub-password').value = '';
       document.getElementById('mclub-name').value = c.name;
-      document.getElementById('mclub-code').value = c.club_code || '';
       document.getElementById('mclub-wilaya').value = c.wilaya || '';
       document.getElementById('mclub-responsable').value = c.responsable || '';
       document.getElementById('mclub-phone').value = c.phone || '';
+      const pwHint = document.getElementById('mclub-password-hint');
+      if (pwHint) pwHint.style.display = 'none';
       document.getElementById('modal-club-title').textContent = t('تعديل النادي', 'Modifier le club');
       openModal('modal-club');
     }
@@ -970,61 +973,137 @@ window.editClub = async function(id) {
 }
 
 // ==================== SAVE CLUB ====================
+
+// PGRST204 = colonne inconnue dans la table : on la retire du payload (une fois)
+function stripUnknownColumn(error, payload) {
+  if (!error || error.code !== 'PGRST204') return false;
+  const match = (error.message || '').match(/'([^']+)' column/);
+  if (!match) return false;
+  const col = match[1];
+  console.warn(`Colonne '${col}' inconnue — retirée du payload`);
+  delete payload[col];
+  return true;
+}
+
+// INSERT tolérant aux colonnes inconnues (retry automatique)
+async function safeInsert(table, payload) {
+  if (!sbClient) throw new Error('Client Supabase indisponible');
+
+  let res = await sbClient.from(table).insert(payload).select().maybeSingle();
+
+  if (stripUnknownColumn(res.error, payload)) {
+    res = await sbClient.from(table).insert(payload).select().maybeSingle();
+  }
+
+  if (res.error) throw res.error;
+  return res.data;
+}
+
+// UPDATE tolérant aux colonnes inconnues (retry automatique)
+async function safeUpdate(table, payload, column, value) {
+  if (!sbClient) throw new Error('Client Supabase indisponible');
+
+  let res = await sbClient.from(table).update(payload).eq(column, value);
+
+  if (stripUnknownColumn(res.error, payload)) {
+    res = await sbClient.from(table).update(payload).eq(column, value);
+  }
+
+  if (res.error) throw res.error;
+  return res.data;
+}
+
+window.safeInsert = safeInsert;
+window.safeUpdate = safeUpdate;
+
 window.saveClub = async function() {
   const id = document.getElementById('mclub-id').value;
-  const data = {
-    email: document.getElementById('mclub-email').value.trim(),
-    password: document.getElementById('mclub-password').value,
-    name: document.getElementById('mclub-name').value.trim(),
-    club_code: document.getElementById('mclub-code').value.trim(),
-    wilaya: document.getElementById('mclub-wilaya').value,
-    responsable: document.getElementById('mclub-responsable').value.trim(),
-    phone: document.getElementById('mclub-phone').value.trim()
-  };
-  
- 
-  
-  if (!data.email || !data.password || !data.name) {
+  const email = document.getElementById('mclub-email').value.trim();
+  const password = document.getElementById('mclub-password').value;
+  const name = document.getElementById('mclub-name').value.trim();
+  const wilaya = document.getElementById('mclub-wilaya').value;
+  const responsable = document.getElementById('mclub-responsable').value.trim();
+  const phone = document.getElementById('mclub-phone').value.trim();
+
+  // Champs obligatoires : email + nom ; le mot de passe seulement à la création
+  if (!email || !name || (!id && !password)) {
     showFlash(t('الحقول مطلوبة', 'Champs obligatoires'), 'err');
     return;
   }
 
+  // Payload public.associations — JAMAIS 'password' ni 'club_code'
+  const payload = {
+    name: name,
+    email: email,
+    phone: phone || null,
+    wilaya: wilaya || null,
+    responsable: responsable || null,
+    role: 'club'
+  };
+
   try {
     if (id) {
-      // Modification
-      const { error } = await sbClient
-        .from('associations')
-        .update(data)
-        .eq('id', parseInt(id));
-      
-      if (error) throw error;
+      // ---------- Modification ----------
+      await safeUpdate('associations', payload, 'id', id);
       invalidateCache('associations');
       showFlash(t('تم تعديل النادي', 'Club modifié'));
-    } else {
-      // Création - vérifier si l'email existe déjà
-      const { data: existing, error: checkError } = await sbClient
-        .from('associations')
-        .select('id')
-        .eq('email', data.email)
-        .single();
-      
-      if (existing) {
-        showFlash(t('هذا البريد الإلكتروني مستخدم بالفعل', 'Cet email est déjà utilisé'), 'err');
-        return;
-      }
-      
-      const { error } = await sbClient
-        .from('associations')
-        .insert(data);
-      
-      if (error) throw error;
-      invalidateCache('associations');
-      showFlash(t('تم إنشاء النادي', 'Club créé'));
+
+      closeModal('modal-club');
+      window.renderAdminClubs();
+      return;
     }
-    
+
+    // ---------- Création : vérifier si l'email existe déjà ----------
+    const { data: existing } = await sbClient
+      .from('associations')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (existing) {
+      showFlash(t('هذا البريد الإلكتروني مستخدم بالفعل', 'Cet email est déjà utilisé'), 'err');
+      return;
+    }
+
+    // user_id depuis auth.users (best effort — la colonne peut ne pas exister)
+    if (sbClient.rpc) {
+      try {
+        const { data: uid, error: rpcError } = await sbClient.rpc('get_user_id_by_email', { user_email: email });
+        if (!rpcError && uid) payload.user_id = uid;
+      } catch (rpcErr) {
+        console.warn('RPC get_user_id_by_email indisponible:', rpcErr.message || rpcErr);
+      }
+    }
+
+    // 1) Edge Function 'create-club' : crée le user Auth + l'association
+    let viaFunction = false;
+    if (sbClient.functions && typeof sbClient.functions.invoke === 'function') {
+      try {
+        const { data: fnData, error: fnError } = await sbClient.functions.invoke('create-club', {
+          body: { email, password, name, wilaya, responsable, phone }
+        });
+        if (fnError) throw fnError;
+        viaFunction = true;
+        console.log('Edge Function create-club OK:', fnData);
+      } catch (fnErr) {
+        console.warn('Edge Function indisponible, fallback:', fnErr.message || fnErr);
+      }
+    }
+
+    // 2) Fallback : créer l'association SANS password
+    if (!viaFunction) {
+      await safeInsert('associations', payload);
+      if (password) {
+        console.warn('Mot de passe non utilisé : Edge Function create-club absente (le compte Auth doit déjà exister).');
+      }
+    }
+
+    invalidateCache('associations');
+    showFlash(t('تم إنشاء النادي', 'Club créé ✅'));
+
     closeModal('modal-club');
     window.renderAdminClubs();
-    
+
   } catch (err) {
     console.error('Erreur saveClub:', err);
     let errorMsg = err.message;
@@ -1045,7 +1124,7 @@ window.deleteClub = async function(id) {
     const { error } = await sbClient
       .from('associations')
       .delete()
-      .eq('id', parseInt(id));
+      .eq('id', id);
     
     if (error) throw error;
     
@@ -2695,7 +2774,7 @@ window.loadClubRankingsView = async function() {
     }
     
     // Récupérer tous les clubs
-    const { data: clubs } = await sbClient.from('associations').select('id, name, club_code');
+    const { data: clubs } = await sbClient.from('associations').select('*');
     const clubsMap = {};
     clubs.forEach(c => clubsMap[c.id] = c);
     
@@ -3186,7 +3265,7 @@ window.exportReportExcel = async function() {
     // Récupérer les données
     const [registrationsRes, clubsRes, resultsRes] = await Promise.all([
       sbClient.from('registrations').select('*').eq('competition_id', parseInt(compId)),
-      sbClient.from('associations').select('id, name, club_code, wilaya'),
+      sbClient.from('associations').select('*'),
       sbClient.from('results').select('*').eq('competition_id', parseInt(compId))
     ]);
     
@@ -3926,7 +4005,7 @@ window.loadResultsParticipants = async function() {
     }
     
     // 3. Récupérer les clubs
-    const { data: clubs } = await sbClient.from('associations').select('id, name, club_code');
+    const { data: clubs } = await sbClient.from('associations').select('*');
     const clubsMap = {};
     clubs.forEach(c => clubsMap[c.id] = c);
     
@@ -4336,7 +4415,7 @@ window.generateReport = async function() {
     // 1. Récupérer les données
     const [registrationsRes, clubsRes, resultsRes] = await Promise.all([
       sbClient.from('registrations').select('*').eq('competition_id', parseInt(compId)),
-      sbClient.from('associations').select('id, name, club_code, wilaya, responsable, phone, email'),
+      sbClient.from('associations').select('*'),
       sbClient.from('results').select('*').eq('competition_id', parseInt(compId))
     ]);
     
@@ -4823,7 +4902,7 @@ window.exportReportPDF = async function() {
     // Récupérer les données (même code que generateReport)
     const [registrationsRes, clubsRes, resultsRes] = await Promise.all([
       sbClient.from('registrations').select('*').eq('competition_id', parseInt(compId)),
-      sbClient.from('associations').select('id, name, club_code, wilaya, responsable, phone, email'),
+      sbClient.from('associations').select('*'),
       sbClient.from('results').select('*').eq('competition_id', parseInt(compId))
     ]);
     
@@ -6266,7 +6345,7 @@ async function generateReportHTML({ compId, isAr }) {
     }
     
     const comp = COMPETITIONS.find(c => c.id === parseInt(compId));
-    const { data: clubs } = await sbClient.from('associations').select('id, name, club_code, wilaya');
+    const { data: clubs } = await sbClient.from('associations').select('*');
     const clubsMap = {};
     clubs.forEach(c => clubsMap[c.id] = c);
     
