@@ -5526,18 +5526,42 @@ window.renderSelectionEquipe = async function() {
 
 // ===== VUE CLUB : formulaire de saisie =====
 async function renderClubSelectionView() {
+  const isAr = currentLanguage === 'ar';
+  
+  // 🔒 METTRE true POUR FERMER, false POUR ROUVRIR
+  const SELECTION_CLOSED = true;
+  
   const adminView = document.getElementById('selection-admin-view');
   const clubView = document.getElementById('selection-club-view');
   if (adminView) adminView.style.display = 'none';
   if (clubView) clubView.style.display = 'block';
-
-  // Spinner si aucun bloc n'est encore affiché
+  
+  // Si les inscriptions sont fermées → afficher le message et stopper
+  if (SELECTION_CLOSED) {
+    if (clubView) {
+      clubView.innerHTML = `
+        <div class="card" style="padding: 48px 24px; text-align: center;">
+          <div style="font-size: 64px; margin-bottom: 16px;">🔒</div>
+          <h3 style="color: #c8102e; font-size: 20px; margin-bottom: 12px;">
+            ${isAr ? 'التسجيلات مغلقة' : 'Inscriptions fermées'}
+          </h3>
+          <p style="color: #666; font-size: 14px; max-width: 500px; margin: 0 auto;">
+            ${isAr 
+              ? 'انتهت فترة التسجيل في انتقاء الفريق الوطني. يرجى التواصل مع اللجنة الوطنية لمزيد من المعلومات.'
+              : 'La période d\'inscription à la sélection de l\'équipe nationale est terminée. Veuillez contacter la Commission Nationale pour plus d\'informations.'}
+          </p>
+        </div>
+      `;
+    }
+    return; // ⛔ Stoppe ici, n'affiche pas le formulaire
+  }
+  
+  // ===== CODE NORMAL (quand SELECTION_CLOSED = false) =====
   const container = document.getElementById('athletes-container');
   if (container && !container.querySelector('.athlete-block')) {
     container.innerHTML = '<div class="loading-spinner"></div>';
   }
-
-  // Charger les données EN ARRIÈRE-PLAN (sans bloquer l'affichage)
+  
   try {
     await loadOnce('selection', initSelection);
   } catch (err) {
@@ -5547,7 +5571,6 @@ async function renderClubSelectionView() {
     }
   }
 }
-
 // ===== VUE ADMIN : tableau de bord =====
 async function renderAdminSelectionView() {
   const adminView = document.getElementById('selection-admin-view');
